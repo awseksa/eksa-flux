@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m0s
-  chart: ./eksa-flux/clusters/helm/nginx-test/
+  chart: ./clusters/helm/nginx-test/
   valuesFiles:
     - values.yaml
   reconcileStrategy: Revision
