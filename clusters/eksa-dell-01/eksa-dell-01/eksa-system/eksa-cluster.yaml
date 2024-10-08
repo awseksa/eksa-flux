@@ -1,0 +1,88 @@
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: Cluster
+metadata:
+  annotations:
+    anywhere.eks.amazonaws.com/managed-by-cli: "true"
+    anywhere.eks.amazonaws.com/management-components-version: v0.20.6
+    anywhere.eks.amazonaws.com/skip-ip-check: "true"
+  name: eksa-dell-01
+  namespace: default
+spec:
+  clusterNetwork:
+    cniConfig:
+      cilium: {}
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+    services:
+      cidrBlocks:
+      - 10.96.0.0/12
+  controlPlaneConfiguration:
+    count: 1
+    endpoint:
+      host: 10.69.201.188
+    machineGroupRef:
+      kind: TinkerbellMachineConfig
+      name: eksa-dell-01-cp
+    machineHealthCheck:
+      maxUnhealthy: 100%
+  datacenterRef:
+    kind: TinkerbellDatacenterConfig
+    name: eksa-dell-01
+  eksaVersion: v0.20.6
+  gitOpsRef:
+    kind: FluxConfig
+    name: eksa-dell-01
+  kubernetesVersion: "1.29"
+  machineHealthCheck:
+    maxUnhealthy: 100%
+    nodeStartupTimeout: 20m0s
+    unhealthyMachineTimeout: 5m0s
+  managementCluster: {}
+
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: TinkerbellDatacenterConfig
+metadata:
+  name: eksa-dell-01
+  namespace: default
+spec:
+  hookImagesURLPath: http://10.69.201.5:8000/hookos
+  osImageURL: http://10.69.201.5:8000/v1_29/ubuntu-2204-kube-1-29.gz
+  tinkerbellIP: 10.69.201.189
+
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: TinkerbellMachineConfig
+metadata:
+  annotations:
+    anywhere.eks.amazonaws.com/control-plane: "true"
+  name: eksa-dell-01-cp
+  namespace: default
+spec:
+  hardwareSelector:
+    type: cp
+  osFamily: ubuntu
+  osImageURL: ""
+  templateRef: {}
+  users:
+  - name: dell-du
+    sshAuthorizedKeys:
+    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCf4LIKDi5DiOIlO3ftzh6jXS0pu1gqIeEU4BxPZboTLiiR2HheGxTsRdI75ARVpkpoSXKRLGph4n0PaHKOnxDq/PECv6rg7FieUAdON/DJrvd3brROzyj9dZb8nKHeZkI0H3i0vbu0GwhAN/kjv8OmaBwyQ2iZ055pYiODk0CbxPspQjqdvb8JJWxe6Ki5bM79f/aekPohGF2FXwiYNVMLhpMWIy+loruKFIuaQsz2pzrJsbJWrYQIuG3HQMDaDdiIr1KfwDtemYSYHDIzWg4/lm3vTkWcY6Iu65PR1/3hPEdyQEetZcuKaYh5akw0sJ5ihDDm5oJyyXISMEO33OtmeKpDWEZ6t3XzbCR5GR/IY/1YIh305SiZonNlrh+ZcRXu3OwyIcJByG8x3OCN/7n0KRH8KNU3uzjCTmIK/gS5WifV0sij2Gig2ToiuU/MhuRh36ttpvwO5+mzSItjaZ7amAOQID/sBaowD+hc+EQReOLAYEMgNpcJPZJHeSF1DnvkDGxhrw04Df0kDCfeYqS4vTjB2bsSjIenKdsHcO5kD7IEIKd8xLcxJH+9N8LUYoV/fSUbVN6CmT8OtMzl8uqTUPYRbB/RC/MwV598xVMIavuf2RRVVIrvheMBl6G+VWHuQBGqBIzjZfaFcYubOqqnc7/vXXTFYX4JCgrgXz5sJQ==
+
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: FluxConfig
+metadata:
+  name: eksa-dell-01
+  namespace: default
+spec:
+  branch: eksa-flux-1
+  clusterConfigPath: clusters/eksa-dell-01
+  github:
+    owner: awseksa
+    personal: true
+    repository: eksa-flux
+  systemNamespace: flux-system
+
+---
