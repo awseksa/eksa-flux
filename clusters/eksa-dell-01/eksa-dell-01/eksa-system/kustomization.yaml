@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
 - eksa-cluster.yaml
 - nginx.yaml
+- apache.yaml
