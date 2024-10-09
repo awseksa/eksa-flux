@@ -31,7 +31,7 @@ spec:
       {{- end }}
       initContainers:
       - name: {{ .Values.common.svc_app_name }}
-        image: {{ .Values.global.hub }}/{{ .Values.initContainers.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        image: {{ .Values.container.image.hub }}/{{ .Values.initContainers.image.repository }}:{{ .Values.initContainers.image.tag }}
         imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
 {{- if  .Values.containerConfig }}
 {{ toYaml .Values.containerConfig | indent 8 }}
