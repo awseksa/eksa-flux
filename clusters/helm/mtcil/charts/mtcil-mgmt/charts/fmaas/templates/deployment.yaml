@@ -199,11 +199,7 @@ spec:
           name: static-config
       initContainers:
         - name: svc-discovery
-          {{- if and (.Values.global) (.Values.global.hub) }}
           image: {{ .Values.fmaas.container.image.hub }}/{{ .Values.fmaas.init_container.image.repository }}:{{ .Values.fmaas.init_container.image.tag }}
-          {{- else }}
-          image: {{ .Values.hub }}/{{ .Values.fmaas.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
-          {{- end }}
           imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
 {{- if  .Values.containerConfig }}
 {{ toYaml .Values.containerConfig | indent 10 }}
