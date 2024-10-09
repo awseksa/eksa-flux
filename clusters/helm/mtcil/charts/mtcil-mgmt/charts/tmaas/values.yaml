@@ -42,7 +42,7 @@ nf:
 app_name_prefix: ""
 ###########################################
 serviceAccount: tmaas-account
-hub: 10.1.1.1:5000
+hub: public.ecr.aws/a6u6k4n0
 
 pollFrequency: 30
 resyncPeriod: 5
