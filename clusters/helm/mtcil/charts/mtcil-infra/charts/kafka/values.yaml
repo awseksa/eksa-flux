@@ -68,7 +68,7 @@ service:
 initContainers:
   image:
     repository: mtcil-svc-init
-    tag: 21.2.2
+    tag: 23.3.1-p2
 
 container:
   replica_count: 1
