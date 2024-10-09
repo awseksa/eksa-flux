@@ -41,7 +41,7 @@ nf:
 app_name_prefix: ""
 
 #namespace: mvnr-cnf-infra
-hub: 10.1.1.1:5000
+hub: public.ecr.aws/a6u6k4n0
 common:
   app_name: etcd
 
@@ -69,7 +69,7 @@ service:
     http: 80
      
 container:
-  replica_count: 3
+  replica_count: 1
   image:
     hub: public.ecr.aws/a6u6k4n0
     repository: etcd
