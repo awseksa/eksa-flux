@@ -79,7 +79,7 @@ scaling:
 etcd_svc_fqdn: "etcd.mvnr-mtcil1-infra-mtcil-mtcil1:2379"
 
 replica_count: 1
-hub: 10.1.1.1:5000
+hub: public.ecr.aws/a6u6k4n0
 tpaas_service:
   log_level: "INFO"
   analytic_kafka_brokers: 
