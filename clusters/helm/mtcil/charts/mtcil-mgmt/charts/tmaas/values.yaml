@@ -58,7 +58,7 @@ tmaas:
   init_container:
     image:
       repository: mtcil-svc-init
-      tag: 21.2.2
+      tag: 23.3.1-p2
 
 componentSpec:
   service_fend:
