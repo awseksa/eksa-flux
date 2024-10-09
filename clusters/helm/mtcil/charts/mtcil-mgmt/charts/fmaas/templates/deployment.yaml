@@ -200,7 +200,7 @@ spec:
       initContainers:
         - name: svc-discovery
           {{- if and (.Values.global) (.Values.global.hub) }}
-          image: {{ .Values.global.hub }}/{{ .Values.fmaas.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+          image: {{ .Values.fmaas.container.image.hub }}/{{ .Values.fmaas.init_container.image.repository }}:{{ .Values.fmaas.init_container.image.tag }}
           {{- else }}
           image: {{ .Values.hub }}/{{ .Values.fmaas.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
           {{- end }}
