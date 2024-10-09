@@ -1,0 +1,45 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (eq (.Values.global.mtcil.ingress.lbController | toString) "istio") .Values.global.mtcil.ingress.enableLB }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: mtcil-http-tcp
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - mtcil-tcp
+    - mtcil-http
+  tcp:
+  - match:
+    - port: {{ .Values.global.mtcil.ingress.istio.ingressTcpPort }}
+    route:
+    - destination:
+        host: config-service
+        port:
+          number: 12090
+        subset: v1
+  http:
+    - match:
+        - uri:
+            prefix: /api/v1/fmaas
+      route:
+        - destination:
+            host: fmaas
+            subset: v1
+            port:
+              number: 8000
+    - match:
+        - uri:
+            prefix: /api/v1/tmaas
+      route:
+        - destination:
+            host: tmaas
+            subset: v1
+            port:
+              number: 8080
+{{- end }}
+{{- end }}

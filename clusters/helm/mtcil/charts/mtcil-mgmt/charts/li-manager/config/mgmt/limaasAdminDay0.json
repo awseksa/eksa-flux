@@ -1,0 +1,22 @@
+{
+  "config": {
+    "li_x1_interface": {
+      "time1": {{.Values.li_x1.time1}},
+      "time2": {{.Values.li_x1.time2}},
+      "remove_all_destinations": {{.Values.li_x1.remove_all_destinations}},
+      "deactivate_all_tasks": {{.Values.li_x1.deactivate_all_tasks}},
+      "n_retry": {{.Values.li_x1.n_retry}},
+      "udsf_address": "{{.Values.udsf_add}}"
+    },
+    "li_x_1_1_interface": {
+      "remote_svc_retry_count": 10,
+	    "remote_svc_retry_interval": 2
+    },
+    "x1_keep_alive": {
+      "bkeep_alive_enable": true
+    },
+    "li_vz_interface": {
+      "use_add_to_modify": true
+    }
+  }
+}

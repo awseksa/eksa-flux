@@ -1,0 +1,14 @@
+{
+  "config": {
+    "li_x2_interface": {
+      "time_p1": {{.Values.li_x2.time_p1}},
+      "time_p2": {{.Values.li_x2.time_p2}},
+      "n_retry": {{.Values.li_x2.n_retry}},
+      "report_periodicity": {{.Values.li_x2.report_periodicity}},
+      "storage_volume_threshold": {{.Values.li_x2.storage_volume_threshold}},
+      "retain_iri_period": {{.Values.li_x2.retain_iri_period}},
+      "udsf_address": "{{.Values.li_x2.udsf_address}}",
+      "ipsec_enabled": {{.Values.li_x2.ipsec_enabled}}
+    }
+  }
+}

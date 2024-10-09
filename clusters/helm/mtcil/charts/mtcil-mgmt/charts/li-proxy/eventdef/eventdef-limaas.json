@@ -1,0 +1,140 @@
+{
+    "events": {
+        "DF2DigitalCertificateExpiry": {
+            "eventType": "LI_DIGI_CERT_EXPIRY",
+            "perceivedSeverity": "WARNING",
+            "probableCause": "X.509 Digital Certificate about to Expire",
+            "specificProblem": "X.509 digital certificate used for interface between LI_X2 Proxy and DF2 is about to expire",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "DigitalCertificateExpiry",
+            "additionalText": "The precondition is: the specific DF2 should have been configured at system. And the service impact is: If the X.509 digital certificate is not rotated on time, then it can result in broken TLS connection between LI_X2 Proxy and DF2 destination(s)",
+            "proposedRepairAction": "Update the Digital Certificate"
+        },
+        "MDF2DigitalCertificateExpiry": {
+            "eventType": "LI_DIGI_CERT_EXPIRY",
+            "perceivedSeverity": "WARNING",
+            "probableCause": "X.509 Digital Certificate about to Expire",
+            "specificProblem": "X.509 Digital Certificate between LI_X2 Proxy and MDF2 is about to Expire",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "DigitalCertificateExpiry",
+            "additionalText": "The precondiion is: the MDF2 destination(s) should have been created by ADMF. And the service impact is: If the X.509 digital certificate is not rotated on time, then it can result in broken TLS connection between LI_X2 Proxy and MDF2 destination(s)",
+            "proposedRepairAction": "Update the Digital Certificate"
+        },
+        "X2InterfaceError": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "CRITICAL",
+            "probableCause": "X2 Interface Protocol Error",
+            "specificProblem": "Protocol Error on LI_X2 Interface",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": ""
+        },
+        "MDF2Unreachable": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "Network error, MDF2 is overloaded, LI_X2 proxy service is overloaded, MDF2 IP address is incorrectly configured in LI_X2 proxy",
+            "specificProblem": "MDF2 is unreachable",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "The precondition is the specific MDF2 should have been created by ADMF. It can impact active LI tasks, whose delivery type is ‘LI_X2 delivery’ and whose destination is configured as specific MDF2, which is now, not reachable",
+            "proposedRepairAction": "Check for MDF2 address and connection to it",
+            "domain": "fault"
+        },
+        "DF2Unreachable": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "Network error, , DF2 is overloaded, LI_X2 Proxy service is overloaded, DF2 IP address is incorrectly configured at LI_X2 Proxy",
+            "specificProblem": "DF2 is unreachable",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "The precondition is the specific DFs is configured at LIMaaS. It can impact active LI tasks, whose delivery type is ‘LI_X2 delivery’ and whose destination is configured as specific DF2, which is now, not reachable",
+            "proposedRepairAction": "Check for DF2 address and connection to it",
+            "domain": "fault"
+        },
+        "MDF2Reachable": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "CLEAR",
+            "probableCause": "none",
+            "specificProblem": "MDF2 is reachable",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "MDF2Unreachable",
+            "additionalText": "IRI packetes get delivered as  and  when received",
+            "proposedRepairAction": "none",
+            "domain": "fault"
+        },
+        "DF2Reachable": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "CLEAR",
+            "probableCause": "All good",
+            "specificProblem": "DF2 is reachable",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "DF2Unreachable",
+            "additionalText": "none",
+            "proposedRepairAction": "none",
+            "domain": "fault"
+        },
+        "TerminatingFault4G": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "DF2 not responding to Keep-alive",
+            "specificProblem": "DF2 not responding to Keep-alive",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Check for DF2 address and connection to it"
+        },
+        "StorageExpiry": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "WARNING",
+            "probableCause": "High TPS of X2 PDUs, Storage allocated for LI_X2 Proxy module is low",
+            "specificProblem": "Storage resource about to expire",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "The preconditions are the MDF2 destination(s) should have been created by ADMF and the LI_X2 proxy and LI Message Handler shall have active connection. It can result into multiple terminating faults, when the storage is completely exhausted",
+            "proposedRepairAction": "Check backlog kafka topic and it's storage and usage details"
+        },
+        "MDF2TLSHandshakeFailed": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "Incorrect X.509 digital certificate is configured at LI_X2 Proxy, X.509 digital certificate is expired at LI_X2 Proxy, TLS version mismatch at LI_X2 Proxy and MDF2",
+            "specificProblem": "TLS handshake fails with specific MDF2",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "The precondition is that the specific MDF2 should have been created by ADMF. It can impact active LI tasks, whose delivery type is ‘LI_X2 delivery’ and whose destination is configured as this specific MDF2",
+            "proposedRepairAction": "Check the digital certificate configured at LI_X2 Proxy"
+        },
+        "DF2TLSHandshakeFailed": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "Incorrect X.509 digital certificate is configured at LI_X2 Proxy, X.509 digital certificate is expired at LI_X2 Proxy, TLS version mismatch at LI_X2 Proxy and DF2",
+            "specificProblem": "TLS handshake failed with specific DF2",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "The precondition is that the specific DFs is configured at LIMaaS. It can impact active LI tasks; whose delivery type is ‘LI_X2 delivery’ and whose destination is configured as this specific DF2",
+            "proposedRepairAction": "Check the digital certificate configured at LI_X2 Proxy"
+        },
+        "Configured": {
+            "eventType": "CONFIGURATION",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Full configuration available for application to be ready",
+            "specificProblem": "Application is configured.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        }
+    }
+}

@@ -1,0 +1,40 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and .Values.alertmanager.enabled (and (empty .Values.alertmanager.configMapOverrideName) (empty .Values.alertmanager.configFromSecret)) -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "prometheus.alertmanager.labels" . | nindent 4 }}
+    {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+    {{- if $custom_extensions.annotations -}}
+    {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  {{- if $custom_extensions.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  name: {{ template "prometheus.alertmanager.fullname" . }}  
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+data:
+{{- $root := . }}
+  alertmanager.yml: |
+    global: {}
+    receivers:
+    - name: web-hook
+      webhook_configs:
+      - url: http://fmaas.{{ $cnfHdr.nfVariables.nfPrefix }}.svc.cluster.local:8000/v1/alerts/
+    route:
+      group_by:
+      - alertname
+      group_interval: 1m
+      group_wait: 10s
+      receiver: web-hook
+      repeat_interval: 1h
+{{- end -}}
+{{- end }}

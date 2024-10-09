@@ -1,0 +1,127 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.traefik) (.Values.global.mtcil.enableRBACprovisioning)) }}
+{{- if and .Values.enabled .Values.rbac.enabled .Values.global.mtcil.scope.namespaced (not .Values.global.mtcil.scope.namespaceList) -}}
+
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "traefik.fullname" . }}
+  namespace: {{ template "traefik.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ template "traefik.name" . }}
+    helm.sh/chart: {{ template "traefik.chart" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - ingressroutes
+      - ingressroutetcps
+      - ingressrouteudps
+      - middlewares
+      - tlsoptions
+      - tlsstores
+      - traefikservices
+      - serverstransports
+    verbs:
+      - get
+      - list
+      - watch
+{{- if .Values.podSecurityPolicy.enabled }}
+  - apiGroups:
+      - extensions
+    resourceNames:
+      - {{ template "traefik.fullname" . }}
+    resources:
+      - podsecuritypolicies
+    verbs:
+      - use
+{{- end }}
+{{- end }}
+
+{{- if and .Values.enabled .Values.rbac.enabled .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+{{- $globalScope := . }}
+{{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+{{- with $globalScope }}
+{{- if or .Values.global.mtcil.scope.enableNamespaceListRBAC ( eq (include "traefik.namespace" . | quote) ($namespace | quote) ) }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "traefik.fullname" . }}
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: {{ template "traefik.name" . }}
+    helm.sh/chart: {{ template "traefik.chart" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+rules:
+  - apiGroups:
+      - ""
+    resources:
+      - services
+      - endpoints
+      - secrets
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+      - watch
+  - apiGroups:
+      - extensions
+    resources:
+      - ingresses/status
+    verbs:
+      - update
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - ingressroutes
+      - ingressroutetcps
+      - ingressrouteudps
+      - middlewares
+      - tlsoptions
+      - tlsstores
+      - traefikservices
+      - serverstransports
+    verbs:
+      - get
+      - list
+      - watch
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}

@@ -1,0 +1,125 @@
+nf:
+  version: "v1"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1" #do not edit
+  nfClass: "infra"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: false
+      metaspec: 
+        annotations:
+          configMgmt: enabled
+    static_cfg: 
+      create: false
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: false
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+
+enabled: false
+
+
+# Default values for kruise.
+crds:
+  managed: true
+
+# values for kruise installation
+installation:
+  namespace: kruise-system
+  roleListGroups:
+    - '*'
+
+featureGates: "PodWebhook=false,KruiseDaemon=false"
+
+manager:
+  # settings for log print
+  log:
+    # log level for kruise-manager
+    level: "4"
+
+  replicas: 2 
+  image:
+    repository: kruise-manager
+    tag: v0.9.0-mtcil
+  webhook:
+    port: 9876
+  metrics:
+    port: 8080
+  healthProbe:
+    port: 8000
+
+  # resources of kruise-manager container
+  resources:
+    limits:
+      cpu: 100m
+      memory: 256Mi
+    requests:
+      cpu: 100m
+      memory: 256Mi
+
+  nodeSelector: {}
+  tolerations: []
+
+webhookConfiguration:
+  failurePolicy:
+    pods: Ignore
+    clonesets: Ignore
+    sidecarsets: Ignore
+  timeoutSeconds: 30
+
+daemon:
+  log:
+    # log level for kruise-daemon
+    level: "4"
+
+  port: 10221
+
+  socketLocation: "/var/run"
+
+  resources:
+    limits:
+      cpu: 50m
+      memory: 128Mi
+    requests:
+      cpu: "0"
+      memory: "0"
+
+podConfig:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "kruise"
+        topologyKey: kubernetes.io/hostname

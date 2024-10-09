@@ -1,0 +1,172 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.certmanager) (.Values.global.mtcil.enableServiceprovisioning)) }} 
+{{- if .Values.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  {{- if .Values.webhook.app_name_prefix }}
+  name: {{ .Values.webhook.app_name_prefix }}
+  {{- else }}
+  name: {{ include "webhook.fullname" . }}
+  {{- end }}
+  namespace: {{ template "cert-manager.namespace" . }}
+  labels:
+    {{ template "cert-manager.metadata.mtcillabels" (dict "specOffset" 4 "dot" .) }}
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "webhook"
+    helm.sh/chart: {{ include "webhook.chart" . }}
+    {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+    {{- $pod_metaspec := .Values.webhook.componentSpec | default dict -}}
+    {{- if $custom_extensions.labels -}}
+    {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  annotations:
+    {{- if .Values.webhook.app_name_prefix }}
+    {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 4 "dot" . "nfService" .Values.webhook.app_name_prefix ) }}
+    {{- else }}
+    {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 4 "dot" . "nfService" (include "webhook.fullname" .)) }}
+    {{- end }}
+  {{- if .Values.webhook.deploymentAnnotations }}
+{{ toYaml .Values.webhook.deploymentAnnotations | indent 4 }}
+  {{- end }}
+  {{- if $custom_extensions.annotations -}}
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.webhook.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "webhook.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "webhook"
+  {{- with .Values.webhook.strategy }}
+  strategy:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      namespace: {{ template "cert-manager.namespace" . }}
+      labels:
+        {{ template "cert-manager.metadata.mtcillabels" (dict "specOffset" 8 "dot" .) }}
+        app: {{ include "webhook.name" . }}
+        app.kubernetes.io/name: {{ include "webhook.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/component: "webhook"
+        helm.sh/chart: {{ include "webhook.chart" . }}
+{{- if .Values.webhook.podLabels }}
+{{ toYaml .Values.webhook.podLabels | indent 8 }}
+{{- end }}
+        {{- if $custom_extensions.labels -}}
+        {{- range $key, $value := .Values.global.custom_extensions.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if $pod_metaspec.deployment -}}
+        {{- range $key, $value := $pod_metaspec.deployment.pod_metaspec.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      annotations:
+        {{- if .Values.webhook.app_name_prefix }}
+        {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 8 "dot" . "nfService" .Values.webhook.app_name_prefix ) }}
+        {{- else }}
+        {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 8 "dot" . "nfService" (include "webhook.fullname" .)) }}
+        {{- end }}
+      {{- if .Values.webhook.podAnnotations }}
+{{ toYaml .Values.webhook.podAnnotations | indent 8 }}
+      {{- end }}
+      {{- if $custom_extensions.annotations -}}
+      {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+    spec:
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- else if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+
+{{- if  .Values.webhook.affinity }}
+      affinity:
+{{ toYaml .Values.webhook.affinity | indent 8 }}
+{{- end }}
+
+      serviceAccountName: {{ template "webhook.serviceAccountName" . }}
+      {{- if .Values.global.priorityClassName }}
+      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.webhook.securityContext}}
+      securityContext:
+{{ toYaml .Values.webhook.securityContext | indent 8 }}
+      {{- end }}
+      {{- if .Values.webhook.hostNetwork }}
+      hostNetwork: true
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.global.hub }}/{{ .Values.webhook.image.repository }}:{{ .Values.webhook.image.tag }}
+          imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 10 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 10 }}
+{{- end }}
+          args:
+          {{- if .Values.global.logLevel }}
+          - --v={{ .Values.global.logLevel }}
+          {{- end }}
+          - --secure-port={{ .Values.webhook.securePort }}
+          - --dynamic-serving-ca-secret-namespace=$(POD_NAMESPACE)
+          - --dynamic-serving-ca-secret-name={{ template "webhook.fullname" . }}-ca
+          - --dynamic-serving-dns-names={{ template "webhook.fullname" . }},{{ template "webhook.fullname" . }}.{{ template "cert-manager.namespace" . }},{{ template "webhook.fullname" . }}.{{ template "cert-manager.namespace" . }}.svc
+        {{- if .Values.webhook.extraArgs }}
+{{ toYaml .Values.webhook.extraArgs | indent 10 }}
+        {{- end }}
+          ports:
+          - name: https
+            containerPort: {{ .Values.webhook.securePort }}
+          livenessProbe:
+            httpGet:
+              path: /livez
+              port: 6080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.webhook.livenessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.livenessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.livenessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.livenessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.livenessProbe.failureThreshold }}
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 6080
+              scheme: HTTP
+            initialDelaySeconds: {{ .Values.webhook.readinessProbe.initialDelaySeconds }}
+            periodSeconds: {{ .Values.webhook.readinessProbe.periodSeconds }}
+            timeoutSeconds: {{ .Values.webhook.readinessProbe.timeoutSeconds }}
+            successThreshold: {{ .Values.webhook.readinessProbe.successThreshold }}
+            failureThreshold: {{ .Values.webhook.readinessProbe.failureThreshold }}
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+{{ toYaml .Values.webhook.resources | indent 12 }}
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+      {{- end }}
+    {{- with .Values.webhook.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end -}}
+{{- end }}

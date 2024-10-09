@@ -1,0 +1,24 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (eq (.Values.global.mtcil.ingress.lbController | toString) "istio") .Values.global.mtcil.ingress.enableLB }}
+{{- if and .Values.global.mtcil.limaasEnabled .Values.ingress.istio.enabled -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  annotations:
+  name: mtcil-https-li-manager
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  selector:
+{{ .Values.global.mtcil.ingress.istio.ingressSelector | toYaml | indent 4 }}
+  servers:
+  - hosts:
+    - '*'
+    port:
+      name: https
+      number: {{ .Values.global.mtcil.ingress.istio.ingressHttpsPort }}
+      protocol: HTTPS
+{{- end }}
+{{- end }}
+{{- end }}

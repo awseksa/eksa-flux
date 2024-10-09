@@ -1,0 +1,16 @@
+annotations:
+  charts.openshift.io/name: mtcil
+apiVersion: v2
+appVersion: "1.0"
+dependencies:
+- name: mtcil-infra
+  repository: ""
+- name: mtcil-mgmt
+  repository: ""
+description: A Helm chart for Mtcil.
+kubeVersion: '>= 1.16.0-0'
+maintainers:
+- email: support@mavenir.com
+  name: mtcil team
+name: mtcil
+version: 23.3.1-p5

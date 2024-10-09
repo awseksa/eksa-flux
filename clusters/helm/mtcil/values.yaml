@@ -1,0 +1,183 @@
+global:
+  timezone: "UTC"
+  dnPrefix: "mvnr"
+  custom_extensions:
+    annotations:
+      mtcil.com/tmaas.nf.nfVersion: 23.3.1-p5 
+  nf:
+    nfId: "mtcil1"
+    mtcilId: "mtcil1"
+  mtcil:
+    cim:
+      imageTag: 23.3.1-p5
+      host_path: /data/logs
+      mount_type: DirectoryOrCreate
+    svcInit:
+      imageTag: 23.3.1-p2
+      resources:
+        requests:
+          cpu: 100m
+          memory: 100Mi
+        limits:
+          cpu: 100m
+          memory: 100Mi
+    imagePullPolicy: IfNotPresent
+    clusterDomain: cluster.local
+    helmTest:
+      enable: true
+      image:
+        repository: "mtcil-svc-init"
+      apigwTimeout: 10
+      iterationCount: 5
+      iterationDelay: 60
+    use_release_ns: false
+    create_ns: true
+    infra_deploy: true
+    enableRBACprovisioning: true
+    infraNodeSelector:
+      enabled: true
+      labelKey: infra
+      labelValue: "true"
+    mgmtNodeSelector:
+      enabled: true
+      labelKey: mgmt
+      labelValue: "true"
+    kafka_svc_fqdn: "kafka-svc.mvnr-mtcil1-infra-mtcil-mtcil1:9092"
+    etcd_svc_fqdn: "etcd.mvnr-mtcil1-infra-mtcil-mtcil1:2379"
+    logging_svc_url: "fb-service.mvnr-paas:5175"
+    logging_svc_tcp_port: "5170"
+    k8s_svc_fqdn: "kubernetes.default"
+    zk_svc_fqdn: "zk-0.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181"
+      #zk_svc_fqdn: "zk-0.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181,zk-1.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181,zk-2.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181"
+    storage_engine: "zookeeper"
+    enable_retrx : "false"
+    log_format: "json"
+    config_mode: "netconf"
+    logging_mode: "FILE"
+    logging_stdout_local: false
+    limaasEnabled: false
+    enableMtcilScaling: false
+    k8s_nf_labels: ""
+    includeFQDNHB: "false"
+    event_label_tmaas_prefix: "mtcil.com/tmaas."
+    event_labels_to_be_prefixed: "nfName,nfServiceName,nfServiceInstanceName"
+    event_labels_to_be_excluded_nf: ""
+    event_labels_to_be_excluded_nfs: ""
+    storage:
+      storageClass: "openebs-standalone"
+      isProviderMTCIL: false
+      isLVPenabled: false
+      mtcilIdPrefixed: false
+      mtcilLocalStorageHostPathPrefix: "/data"
+      mtcilLocalStoragePVJobImage: "mtcil-svc-init" 
+      mtcilLocalStoragePVJobTag: 23.3.1-p2
+      hostlocalVolumeSelector: []
+    securityPolicy:
+      type: "none"
+      name: "none"
+    podConfig:
+      securityContext:
+        fsGroup: 3001
+    containerConfig:
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - all
+        privileged: false
+        runAsNonRoot: true
+        runAsUser: 1001
+        runAsGroup: 2001
+      terminationMessagePolicy: FallbackToLogsOnError
+    fluentd:
+      enabled: false
+      output:
+        brokers: <output_kafka_url>:<port> # output kafka url
+        topic: logs
+
+    enableMandatoryServices: true
+    enableRBACprovisioning: true
+    enableCRDprovisioning: false
+    enablePodmonitorProvisioning: false 
+    enableWebhookprovisioning: true
+    enableServiceprovisioning: true
+    optionalDeployment:
+      traefik: false
+      kruise: false
+      certmanager: false
+      metricsExporter: false
+      mtcilRBAC:
+        kruise: true
+    scope:
+      namespaced: false
+      namespaceList: [] 
+      enableNamespaceListRBAC: true
+      enablePriviledgedRBAC: true
+
+    authManagement:
+      enableAutoInjection: true
+      enableSecretDiscovery: false
+      secretName: "mtcil-ca-bundle"
+      serverKey: "tls.key"
+      serverCertificate: "tls.crt"
+      enableCertificateprovisioning: true
+      #mtcilWebhookAnnotations:
+      type: ""  #ocp/certmanager
+      ocpApiPrefix: "service.beta.openshift.io"
+      
+    ingress:
+       enableLB: false
+       addressPool: "mtcil1"
+       lbIngressIP: ""
+       lbL7ingressPort: 80
+       lbL7tmaasPort: 3179
+       lbL7fmaasPort: 3180
+       lbL4netconfPort: 3181 
+       lbL4limaasPort: 3182  #Not used in NBI notification, if changed same should be changed in mtcil addon traefik values.yaml if mtcil addon traefik is used
+       lbL4prometheusPort: 3183 #Not used in NBI notification, if changed same should be changed in mtcil addon traefik values.yaml if mtcil addon traefik is used
+       lbController: "Traefik"
+       istio:
+         ingressTcpPort: 3181
+         ingressHttpPort: 80
+         ingressHttpsPort: 443
+         ingressSelector:
+           istio: "ingress"
+ 
+nf:
+  version: "v1"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1" #do not edit
+  nfClass: "infra"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: false
+      metaspec:
+        annotations:
+          configMgmt: enabled
+    static_cfg:
+      create: false
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: false
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}

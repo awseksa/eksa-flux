@@ -1,0 +1,62 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices .Values.global.mtcil.helmTest.enable }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Pod
+metadata:
+{{- if .Values.app_name_prefix }}
+  name: {{ .Values.app_name_prefix }}
+{{- else }}
+  name: "{{ .Release.Name }}-helm-test"
+{{- end }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+  annotations:
+    "helm.sh/hook": test
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded,hook-failed
+spec:
+  {{- if .Values.global.mtcil.use_release_ns }}
+  serviceAccountName: mtcil-sa
+  {{- end }}
+  containers:
+  - name: helm-test
+    image: {{ .Values.global.hub }}/{{ .Values.global.mtcil.helmTest.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+    imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 4 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 4 }}
+{{- end }}
+    env:
+     - name: NFID
+       value: {{ .Values.global.nf.nfId | quote }}
+     - name: TOPO_ENGINE_FQDN
+       value: {{ .Values.global.mtcil.topo_engine_fqdn | default (print "topo-engine." $cnfHdr.nfVariables.nfPrefix ":8080") | quote }}
+     - name: APIGW_TIMEOUT
+       value: {{ .Values.global.mtcil.helmTest.apigwTimeout | quote }}
+     - name: TOTALITERATIONS
+       value: {{ .Values.global.mtcil.helmTest.iterationCount | quote }}
+     - name: TESTDELAY
+       value: {{ .Values.global.mtcil.helmTest.iterationDelay | quote }}
+    command: [ "/bin/bash", "-c", "helm_test.sh" ]
+    resources:
+      limits:
+        cpu: {{ .Values.global.mtcil.svcInit.resources.limits.cpu }}
+        memory: {{ .Values.global.mtcil.svcInit.resources.limits.memory }}
+      requests:
+        cpu: {{ .Values.global.mtcil.svcInit.resources.requests.cpu }}
+        memory: {{ .Values.global.mtcil.svcInit.resources.requests.memory }}
+  restartPolicy: Never
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+  nodeSelector:
+    {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+{{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 2 }}
+{{- else if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 2 }}
+{{- end }}
+{{- if  .Values.affinity }}
+  affinity:
+{{ toYaml .Values.affinity | indent 4 }}
+{{- end }}
+{{- end }}

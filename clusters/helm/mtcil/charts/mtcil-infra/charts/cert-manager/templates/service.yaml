@@ -1,0 +1,38 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.certmanager) (.Values.global.mtcil.enableServiceprovisioning)) }} 
+{{- if and .Values.enabled (.Values.prometheus.enabled) -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ template "cert-manager.fullname" . }}
+  namespace: {{ template "cert-manager.namespace" . }}
+  labels:
+    app: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "controller"
+    helm.sh/chart: {{ include "cert-manager.chart" . }}
+    {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+    {{- if $custom_extensions.labels -}}
+    {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  {{- if $custom_extensions.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+spec:
+  type: ClusterIP
+  ports:
+    - protocol: TCP
+      port: 9402
+      targetPort: {{ .Values.prometheus.servicemonitor.targetPort }}
+  selector:
+    app.kubernetes.io/name: {{ include "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/component: "controller"
+{{- end -}}
+{{- end }}

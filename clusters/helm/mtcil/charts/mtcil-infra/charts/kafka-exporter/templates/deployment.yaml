@@ -1,0 +1,121 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.optionalDeployment.metricsExporter }}
+{{- if .Values.global.mtcil.infra_deploy -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: apps/v1
+kind: Deployment
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix)) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" "") }}
+{{- end }}
+spec:
+  replicas: {{ .Values.container.replica_count }}
+  selector:
+    matchLabels:
+      app: {{ .Values.common.app_name }}
+  template:
+    {{- if .Values.app_name_prefix }}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- else }}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+    {{- end }}
+    spec:
+      {{- if .Values.global.mtcil.use_release_ns }}
+      serviceAccountName: mtcil-sa
+      {{- end }}
+      initContainers:
+      - name: {{ .Values.common.svc_app_name }}
+        image: {{ .Values.global.hub }}/{{ .Values.initContainers.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+         - name: ETCD_SVC_FQDN
+           value: {{ .Values.global.mtcil.etcd_svc_fqdn | quote }}
+         - name: KAFKA_SVC_FQDN
+           value: {{ .Values.global.mtcil.kafka_svc_fqdn | quote }}
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+        command: [ "/bin/bash", "-c", "svc-discovery.sh \"EVENT FMAASEVENTS\" " ]
+        resources:
+          limits:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.limits.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.requests.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.requests.memory }}
+      containers:
+      - name: {{ .Values.common.app_name }}
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+        {{- else }}
+        image: {{ .Values.container.image.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: KAFKA_CLIENTS
+          value: kafka-svc.$(K8S_NAMESPACE).svc.{{ .Values.global.mtcil.clusterDomain }}:9092
+        - name: TZ
+          value: {{ .Values.global.timezone | quote }}
+        args:
+          - --kafka.server=$(KAFKA_CLIENTS)
+        livenessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 30
+          successThreshold: 1
+          timeoutSeconds: 9
+        readinessProbe:
+          failureThreshold: 1
+          httpGet:
+            path: /healthz
+            port: metrics
+            scheme: HTTP
+          initialDelaySeconds: 3
+          periodSeconds: 15
+          successThreshold: 1
+          timeoutSeconds: 9
+        resources:
+          limits:
+            cpu: {{ .Values.container.resource.limit_cpu }}
+            memory: {{ .Values.container.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.container.resource.requests_cpu }}
+            memory: {{ .Values.container.resource.requests_memory }}
+        ports:
+        - containerPort: {{ .Values.container.ports.client }}
+          name: metrics
+          protocol: TCP
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+{{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+{{- end }}
+{{- end }}

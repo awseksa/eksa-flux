@@ -1,0 +1,66 @@
+module mavenir-mtcil-tmaas-config {
+  namespace "urn:mavenir:ns:yang:mtcil:tmaas";
+  prefix mtcil-tmaas;
+
+  import ietf-inet-types { prefix inet; }
+  import tailf-common { prefix tailf; }
+
+  revision "2020-02-11" {
+    description "Initial revision";
+  }
+
+  container config {
+    tailf:callpoint configUpdate {
+      tailf:transaction-hook subtree;
+    }
+
+    leaf completedTimeout {
+      type int32 {
+        range 900..9000;
+      }
+      description "Indicates the COMPLETE timeout for any show-exec operation";
+      mandatory true;
+    }
+    leaf runningTimeout {
+      type int32 {
+        range 600..6000;
+      }
+      description "Indicates the RUNNING timeout for any show-exec operation";
+      mandatory true;
+    }
+    leaf pendingTimeout {
+      type int32 {
+	    range 300..3000;
+      }
+      description "Indicates the PENDING timeout for any show-exec operation";
+      mandatory true;
+    }
+    leaf maxRunningOpPerNf {
+      type int32 {
+	    range 1..100;
+      }
+      description "Indicates the maximum limit allowed for show-exec operations in RUNNING mode per nf";
+      mandatory true;
+    }
+    leaf maxPendingOpPerNf {
+      type int32 {
+	    range 1..100;
+      }
+      description "Indicates the maximum limit allowed for show-exec operations in PENDING mode per nf";
+      mandatory true;
+    }
+    leaf logLevel {
+      type enumeration {
+        enum TRACE;
+        enum FATAL;
+        enum ERROR;
+        enum WARN;
+        enum INFO;
+        enum DEBUG;
+        enum ALL;
+      }
+      description "Indicates the log level for TMaaS to print. select ALL if want to print all levels.";
+      mandatory true;
+    }
+  }
+}

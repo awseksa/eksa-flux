@@ -1,0 +1,48 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Service
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.service.metaspec) }}
+    {{- if eq (.Values.global.mtcil.ingress.lbController | toString) "metalLB" }}
+    metallb.universe.tf/allow-shared-ip: "{{ .Values.global.nf.mtcilId | toString }}"
+    metallb.universe.tf/address-pool: "{{ .Values.global.mtcil.ingress.addressPool | toString }}"
+    {{- end }}
+spec:
+  selector:
+    app: fmaas
+{{- if  .Values.serviceConfig }}
+{{ toYaml .Values.serviceConfig | indent 2 }}
+{{- end }}
+{{- if .Values.global.mtcil.serviceConfig }}
+{{ toYaml .Values.global.mtcil.serviceConfig | indent 2 }}
+{{- end }}
+  ports:
+    - name: rest
+      {{- if and (eq (.Values.global.mtcil.ingress.lbController | toString) "metalLB") .Values.global.mtcil.ingress.enableLB }}
+      port: {{ .Values.global.mtcil.ingress.lbL7fmaasPort }}
+      {{- else }}
+      port: 12099
+      {{- end }}
+      targetPort: 8000
+    - port: {{ .Values.service.port }}
+      targetPort: 8000
+{{- if .Values.global.mtcil.ingress.enableLB }}
+      nodePort: 0
+{{- end }}
+      protocol: TCP
+      name: http
+    - port: 8000
+      targetPort: 8000
+{{- if .Values.global.mtcil.ingress.enableLB }}
+      nodePort: 0
+{{- end }}
+      protocol: TCP
+      name: api
+{{- if and (eq (.Values.global.mtcil.ingress.lbController | toString) "metalLB") .Values.global.mtcil.ingress.enableLB }}
+  type: "LoadBalancer"
+  loadBalancerIP: {{ .Values.global.mtcil.ingress.lbIngressIP }}
+{{- else }}
+  type: {{ printf "%s" ( ternary "ClusterIP" "NodePort" .Values.global.mtcil.ingress.enableLB ) }}
+{{- end }}
+{{- end }}

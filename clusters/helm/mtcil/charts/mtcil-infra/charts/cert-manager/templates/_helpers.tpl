@@ -1,0 +1,172 @@
+{{/* vim: set filetype=mustache: */}}
+{{/*
+Expand the name of the chart.
+*/}}
+{{- define "cert-manager.name" -}}
+{{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+*/}}
+{{- define "cert-manager.fullname" -}}
+{{- if .Values.fullnameOverride -}}
+{{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- $name := default .Chart.Name .Values.nameOverride -}}
+{{- if contains $name .Release.Name -}}
+{{- .Release.Name | trunc 63 | trimSuffix "-" -}}
+{{- else -}}
+{{- printf "%s-%s" .Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "cert-manager.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "cert-manager.serviceAccountName" -}}
+{{- if .Values.serviceAccount.create -}}
+    {{ default (include "cert-manager.fullname" .) .Values.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+Webhook templates
+*/}}
+
+{{/*
+Expand the name of the chart.
+Manually fix the 'app' and 'name' labels to 'webhook' to maintain
+compatibility with the v0.9 deployment selector.
+*/}}
+{{- define "webhook.name" -}}
+{{- printf "webhook" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "webhook.fullname" -}}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 55 | trimSuffix "-" -}}
+{{- printf "%s-webhook" $trimmedName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{- define "webhook.caRef" -}}
+{{ template "cert-manager.namespace" .}}/{{ template "webhook.fullname" . }}-ca
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "webhook.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "webhook.serviceAccountName" -}}
+{{- if .Values.webhook.serviceAccount.create -}}
+    {{ default (include "webhook.fullname" .) .Values.webhook.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.webhook.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+{{/*
+cainjector templates
+*/}}
+
+{{/*
+Expand the name of the chart.
+Manually fix the 'app' and 'name' labels to 'cainjector' to maintain
+compatibility with the v0.9 deployment selector.
+*/}}
+{{- define "cainjector.name" -}}
+{{- printf "cainjector" -}}
+{{- end -}}
+
+{{/*
+Create a default fully qualified app name.
+We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
+If release name contains chart name it will be used as a full name.
+*/}}
+{{- define "cainjector.fullname" -}}
+{{- $trimmedName := printf "%s" (include "cert-manager.fullname" .) | trunc 52 | trimSuffix "-" -}}
+{{- printf "%s-cainjector" $trimmedName | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create chart name and version as used by the chart label.
+*/}}
+{{- define "cainjector.chart" -}}
+{{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- end -}}
+
+{{/*
+Create the name of the service account to use
+*/}}
+{{- define "cainjector.serviceAccountName" -}}
+{{- if .Values.cainjector.serviceAccount.create -}}
+    {{ default (include "cainjector.fullname" .) .Values.cainjector.serviceAccount.name }}
+{{- else -}}
+    {{ default "default" .Values.cainjector.serviceAccount.name }}
+{{- end -}}
+{{- end -}}
+
+
+{{- define "cert-manager.namespace" -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+{{- printf "%s" ($cnfHdr.nfVariables.nfPrefix) -}}
+{{- end }}
+
+{{- define "cert-manager.metadata.annotatetmaasspec" -}}
+{{- $specOffset := .specOffset -}}
+{{- $nfService := .nfService -}}
+{{- printf "mtcil.com/tmaas: '{" | nindent (add $specOffset 0 | int) -}}
+{{- printf "\"vendorId\": \"%s\"," (.cnfHdr.nfVariables.root.Values.nf.vendorId | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "\"mtcilId\": \"%s\"," (.cnfHdr.nfVariables.root.Values.global.nf.mtcilId | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "\"nfClass\": \"%s\"," (.cnfHdr.nfVariables.root.Values.nf.nfClass | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "\"nfType\": \"%s\"," (.cnfHdr.nfVariables.root.Values.nf.nfType | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "\"nfId\": \"%s\"," (.cnfHdr.nfVariables.root.Values.global.nf.nfId | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "\"nfServiceId\": \"%s\"," ( $nfService | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "\"nfServiceType\": \"%s\"" ($nfService | toString) | nindent (add $specOffset 4 | int) -}}
+{{- printf "}'" | nindent (add $specOffset 2 | int) -}}
+{{- end -}}
+
+{{- define "cert-manager.metadata.mtcilannotations" -}}
+{{- $specOffset := .specOffset -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- $nfService := .nfService -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" .dot ) -}}
+{{- printf "init: \"true\"" | indent (add $specOffset 0 | int) | trim -}}
+{{- include "cert-manager.metadata.annotatetmaasspec" (dict "specOffset" $specOffset "cnfHdr" $cnfHdr "nfService" $nfService) -}}
+{{- printf "svcVersion: \"%s\"" ($cnfHdr.nfVariables.svcVersion | toString) | nindent (add $specOffset 0 | int) -}}
+{{- printf "topogw.fqdn: \"%s\"" ($cnfHdr.nfVariables.topogwFQDN | toString) | nindent (add $specOffset 0 | int) -}}
+{{- printf "nwFnPrefix: \"%s\"" ($cnfHdr.nfVariables.nfPrefix) | nindent (add $specOffset 0 | int) -}}
+{{- end -}}
+
+{{- define "cert-manager.metadata.mtcillabels" -}}
+{{- $specOffset := .specOffset -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" .dot ) -}}
+{{- printf "microSvcName: %s" ($cnfHdr.nfVariables.svcname | quote) | indent (add $specOffset 0 | int) | trim -}}
+{{- printf "mtcilId: %s" ($cnfHdr.nfVariables.mtcilId | quote) | nindent (add $specOffset 0 | int) -}}
+{{- printf "nfType: %s" ($cnfHdr.nfVariables.nfType | quote) | nindent (add $specOffset 0 | int) -}}
+{{- printf "nfId: %s" ($cnfHdr.nfVariables.nfId | quote) | nindent (add $specOffset 0 | int) -}}
+{{- end -}}
+

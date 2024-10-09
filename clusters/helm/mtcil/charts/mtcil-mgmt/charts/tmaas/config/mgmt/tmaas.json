@@ -1,0 +1,10 @@
+{
+	"config": {
+		"completedTimeout": 900,
+		"runningTimeout": 600,
+		"pendingTimeout": 300,
+		"maxRunningOpPerNf": 20,
+		"maxPendingOpPerNf": 20,
+		"logLevel": "DEBUG"
+	}
+}

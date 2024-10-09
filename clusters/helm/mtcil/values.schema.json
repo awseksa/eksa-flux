@@ -1,0 +1,558 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "type": "object",
+    "properties": {
+        "global": {
+            "type": "object",
+            "properties": {
+                "dnPrefix": {
+                    "type": "string"
+                },
+                "mtcil": {
+                    "type": "object",
+                    "properties": {
+                        "authManagement": {
+                            "type": "object",
+                            "properties": {
+                                "enableAutoInjection": {
+                                    "type": "boolean"
+                                },
+                                "enableCertificateprovisioning": {
+                                    "type": "boolean"
+                                },
+                                "enableSecretDiscovery": {
+                                    "type": "boolean"
+                                },
+                                "secretName": {
+                                    "type": "string"
+                                },
+                                "serverCertificate": {
+                                    "type": "string"
+                                },
+                                "serverKey": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "cim": {
+                            "type": "object",
+                            "properties": {
+                                "host_path": {
+                                    "type": "string"
+                                },
+                                "imageTag": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "config_mode": {
+                            "type": "string"
+                        },
+                        "containerConfig": {
+                            "type": "object",
+                            "properties": {
+                                "securityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "allowPrivilegeEscalation": {
+                                            "type": "boolean"
+                                        },
+                                        "capabilities": {
+                                            "type": "object",
+                                            "properties": {
+                                                "drop": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        },
+                                        "privileged": {
+                                            "type": "boolean"
+                                        },
+                                        "runAsGroup": {
+                                            "type": "integer"
+                                        },
+                                        "runAsNonRoot": {
+                                            "type": "boolean"
+                                        },
+                                        "runAsUser": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                },
+                                "terminationMessagePolicy": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "create_ns": {
+                            "type": "boolean"
+                        },
+                        "enableCRDprovisioning": {
+                            "type": "boolean"
+                        },
+                        "enableMandatoryServices": {
+                            "type": "boolean"
+                        },
+                        "enableMtcilScaling": {
+                            "type": "boolean"
+                        },
+                        "enablePodmonitorProvisioning": {
+                            "type": "boolean"
+                        },
+                        "enableRBACprovisioning": {
+                            "type": "boolean"
+                        },
+                        "enableServiceprovisioning": {
+                            "type": "boolean"
+                        },
+                        "enableWebhookprovisioning": {
+                            "type": "boolean"
+                        },
+                        "enable_retrx": {
+                            "type": "string"
+                        },
+                        "etcd_svc_fqdn": {
+                            "type": "string"
+                        },
+                        "event_label_tmaas_prefix": {
+                            "type": "string"
+                        },
+                        "event_labels_to_be_excluded_nf": {
+                            "type": "string"
+                        },
+                        "event_labels_to_be_excluded_nfs": {
+                            "type": "string"
+                        },
+                        "event_labels_to_be_prefixed": {
+                            "type": "string"
+                        },
+                        "fluentd": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "output": {
+                                    "type": "object",
+                                    "properties": {
+                                        "brokers": {
+                                            "type": "string"
+                                        },
+                                        "topic": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "helmTest": {
+                            "type": "object",
+                            "properties": {
+                                "apigwTimeout": {
+                                    "type": "integer"
+                                },
+                                "enable": {
+                                    "type": "boolean"
+                                },
+                                "image": {
+                                    "type": "object",
+                                    "properties": {
+                                        "repository": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "iterationCount": {
+                                    "type": "integer"
+                                },
+                                "iterationDelay": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "imagePullPolicy": {
+                            "type": "string"
+                        },
+                        "infraNodeSelector": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "labelKey": {
+                                    "type": "string"
+                                },
+                                "labelValue": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "infra_deploy": {
+                            "type": "boolean"
+                        },
+                        "ingress": {
+                            "type": "object",
+                            "properties": {
+                                "enableLB": {
+                                    "type": "boolean"
+                                },
+                                "lbController": {
+                                    "type": "string"
+                                },
+                                "lbIngressIP": {
+                                    "type": "string"
+                                },
+                                "lbL4limaasPort": {
+                                    "type": "integer"
+                                },
+                                "lbL4netconfPort": {
+                                    "type": "integer"
+                                },
+                                "lbL4prometheusPort": {
+                                    "type": "integer"
+                                },
+                                "lbL7ingressPort": {
+                                    "type": "integer"
+                                }
+                            }
+                        },
+                        "k8s_nf_labels": {
+                            "type": "string"
+                        },
+                        "k8s_svc_fqdn": {
+                            "type": "string"
+                        },
+                        "kafka_svc_fqdn": {
+                            "type": "string"
+                        },
+                        "limaasEnabled": {
+                            "type": "boolean"
+                        },
+                        "log_format": {
+                            "type": "string"
+                        },
+                        "logging_mode": {
+                            "type": "string"
+                        },
+                        "logging_stdout_local": {
+                            "type": "boolean"
+                        },
+                        "logging_svc_tcp_port": {
+                            "type": "string"
+                        },
+                        "logging_svc_url": {
+                            "type": "string"
+                        },
+                        "mgmtNodeSelector": {
+                            "type": "object",
+                            "properties": {
+                                "enabled": {
+                                    "type": "boolean"
+                                },
+                                "labelKey": {
+                                    "type": "string"
+                                },
+                                "labelValue": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "optionalDeployment": {
+                            "type": "object",
+                            "properties": {
+                                "certmanager": {
+                                    "type": "boolean"
+                                },
+                                "kruise": {
+                                    "type": "boolean"
+                                },
+                                "metricsExporter": {
+                                    "type": "boolean"
+                                },
+                                "mtcilRBAC": {
+                                    "type": "object",
+                                    "properties": {
+                                        "kruise": {
+                                            "type": "boolean"
+                                        }
+                                    }
+                                },
+                                "traefik": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "podConfig": {
+                            "type": "object",
+                            "properties": {
+                                "securityContext": {
+                                    "type": "object",
+                                    "properties": {
+                                        "fsGroup": {
+                                            "type": "integer"
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "scope": {
+                            "type": "object",
+                            "properties": {
+                                "enableNamespaceListRBAC": {
+                                    "type": "boolean"
+                                },
+                                "enablePriviledgedRBAC": {
+                                    "type": "boolean"
+                                },
+                                "namespaceList": {
+                                    "type": "array"
+                                },
+                                "namespaced": {
+                                    "type": "boolean"
+                                }
+                            }
+                        },
+                        "securityPolicy": {
+                            "type": "object",
+                            "properties": {
+                                "name": {
+                                    "type": "string"
+                                },
+                                "type": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "storage": {
+                            "type": "object",
+                            "properties": {
+                                "hostlocalVolumeSelector": {
+                                    "type": "array"
+                                },
+                                "isLVPenabled": {
+                                    "type": "boolean"
+                                },
+                                "isProviderMTCIL": {
+                                    "type": "boolean"
+                                },
+                                "mtcilIdPrefixed": {
+                                    "type": "boolean"
+                                },
+                                "mtcilLocalStorageHostPathPrefix": {
+                                    "type": "string"
+                                },
+                                "mtcilLocalStoragePVJobImage": {
+                                    "type": "string"
+                                },
+                                "mtcilLocalStoragePVJobTag": {
+                                    "type": "string"
+                                },
+                                "storageClass": {
+                                    "type": "string"
+                                }
+                            }
+                        },
+                        "storage_engine": {
+                            "type": "string"
+                        },
+                        "svcInit": {
+                            "type": "object",
+                            "properties": {
+                                "imageTag": {
+                                    "type": "string"
+                                },
+                                "resources": {
+                                    "type": "object",
+                                    "properties": {
+                                        "limits": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string"
+                                                },
+                                                "memory": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        },
+                                        "requests": {
+                                            "type": "object",
+                                            "properties": {
+                                                "cpu": {
+                                                    "type": "string"
+                                                },
+                                                "memory": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "use_release_ns": {
+                            "type": "boolean"
+                        },
+                        "zk_svc_fqdn": {
+                            "type": "string"
+                        }
+                    }
+                },
+                "nf": {
+                    "type": "object",
+                    "properties": {
+                        "mtcilId": {
+                            "type": "string"
+                        },
+                        "nfId": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "nf": {
+            "type": "object",
+            "properties": {
+                "cnftpl_alertsdef": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean"
+                        },
+                        "metaspec": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "cnftpl_configmap": {
+                    "type": "object",
+                    "properties": {
+                        "env_cfg": {
+                            "type": "object",
+                            "properties": {
+                                "create": {
+                                    "type": "boolean"
+                                },
+                                "metaspec": {
+                                    "type": "object"
+                                }
+                            }
+                        },
+                        "mgmt_cfg": {
+                            "type": "object",
+                            "properties": {
+                                "create": {
+                                    "type": "boolean"
+                                },
+                                "metaspec": {
+                                    "type": "object",
+                                    "properties": {
+                                        "annotations": {
+                                            "type": "object",
+                                            "properties": {
+                                                "configMgmt": {
+                                                    "type": "string"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        "static_cfg": {
+                            "type": "object",
+                            "properties": {
+                                "create": {
+                                    "type": "boolean"
+                                },
+                                "metaspec": {
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "cnftpl_dashboard": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean"
+                        },
+                        "metaspec": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "cnftpl_eventdef": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean"
+                        },
+                        "metaspec": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "cnftpl_metricsdef": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean"
+                        },
+                        "metaspec": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "cnftpl_namespaces": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean"
+                        },
+                        "metaspec": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "cnftpl_secret": {
+                    "type": "object",
+                    "properties": {
+                        "create": {
+                            "type": "boolean"
+                        },
+                        "metaspec": {
+                            "type": "object"
+                        },
+                        "secretspec": {
+                            "type": "object"
+                        }
+                    }
+                },
+                "mtcilId": {
+                    "type": "string"
+                },
+                "nfClass": {
+                    "type": "string"
+                },
+                "nfId": {
+                    "type": "string"
+                },
+                "nfType": {
+                    "type": "string"
+                },
+                "vendorId": {
+                    "type": "string"
+                },
+                "version": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

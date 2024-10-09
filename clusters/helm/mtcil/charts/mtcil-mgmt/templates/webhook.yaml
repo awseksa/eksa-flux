@@ -1,0 +1,98 @@
+{{- if .Values.global.mtcil.enableMandatoryServices }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+
+{{- if and .Values.global.mtcil.enableWebhookprovisioning .Values.global.mtcil.authManagement.enableSecretDiscovery .Values.global.mtcil.authManagement.enableAutoInjection}}
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: MutatingWebhookConfiguration
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-upgrade-webhook
+  labels:
+    app.kubernetes.io/name: config-service
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  {{- if and .Values.global.mtcil.authManagement.enableAutoInjection .Values.global.mtcil.authManagement.mtcilWebhookAnnotations }}
+  annotations:
+{{ toYaml .Values.global.mtcil.authManagement.mtcilWebhookAnnotations | indent 4 }}
+  {{- else if and .Values.global.mtcil.authManagement.enableAutoInjection ( eq (.Values.global.mtcil.authManagement.type | toString) "ocp") }}
+  annotations:
+    {{ .Values.global.mtcil.authManagement.ocpApiPrefix }}/inject-cabundle: "true"
+  {{- else if .Values.global.mtcil.authManagement.enableAutoInjection }}
+  annotations:
+    cert-manager.io/inject-ca-from: "{{ $cnfHdr.nfVariables.nfPrefix }}/{{ .Values.global.mtcil.authManagement.secretName }}"
+  {{- end }}
+webhooks:
+  - name: config-service.{{ $cnfHdr.nfVariables.mtcilId }}.svc
+    objectSelector:
+      matchLabels:
+        mtcilId: {{ $cnfHdr.nfVariables.mtcilId }}
+    admissionReviewVersions:
+    - v1
+    clientConfig:
+      service:
+        name: config-service
+        namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+        path: "/mutate"
+    rules:
+      - operations: [ "UPDATE" ]
+        apiGroups: [""]
+        apiVersions: ["v1"]
+        resources: ["configmaps"]
+    sideEffects: None
+    failurePolicy: Fail
+
+{{- end }}
+
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.authManagement.enableSecretDiscovery .Values.global.mtcil.authManagement.enableAutoInjection (not ( eq (.Values.global.mtcil.authManagement.type | toString) "ocp"))}}
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ .Values.global.mtcil.authManagement.secretName }}
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+{{- end }}
+
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.authManagement.enableSecretDiscovery .Values.global.mtcil.authManagement.enableCertificateprovisioning .Values.global.mtcil.authManagement.enableAutoInjection (not ( eq (.Values.global.mtcil.authManagement.type | toString) "ocp"))}}
+---
+#Note: secret name and certificate name should be same
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  name: {{ .Values.global.mtcil.authManagement.secretName }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  secretName: {{ .Values.global.mtcil.authManagement.secretName }}
+  duration: 2160h # 90d
+  renewBefore: 360h # 15d
+  isCA: true
+  commonName: {{ printf "%s%s.svc" "{config-service/topo-engine}." ($cnfHdr.nfVariables.nfPrefix)  | quote }}
+  #commonName: config-service.{{ $cnfHdr.nfVariables.nfPrefix }}.svc
+  privateKey:
+    algorithm: RSA
+    encoding: PKCS1
+    size: 2048
+  dnsNames:
+  - topo-engine.{{ $cnfHdr.nfVariables.nfPrefix }}.svc
+  - config-service.{{ $cnfHdr.nfVariables.nfPrefix }}.svc
+  issuerRef:
+    name: selfsigned
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: selfsigned
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  selfSigned: {}
+{{- end }}
+
+{{- end }}

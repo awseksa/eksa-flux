@@ -1,0 +1,226 @@
+######## CNF TEMPLATE DEFINITIONS ###########
+nf:
+  version: "23.3.1-p3"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1"
+  nfClass: "mgmt"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: true
+      metaspec:
+        annotations:
+          configMgmt: enabled
+    static_cfg:
+      create: true
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: true
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+###########################################
+
+mmaas_enabled: true
+namespace: mvnr-mtcil1-mgmt-mtcil-mtcil1
+etcd_svc_fqdn: "etcd.mvnr-mtcil1-infra-mtcil-mtcil1:2379"
+prometheus_operator: enable
+mtcil_prometheus: disable
+alerts_controller: enable
+prom_rule_selector: "app=kube-prometheus-stack,release=kube-prometheus-stack"
+
+common:
+  app_name: fmaas
+
+
+serviceaccount: fmaas #to check/confirm
+
+componentSpec:
+  deployment:
+    metaspec:
+      ext_name: v1
+    pod_metaspec:
+      labels:
+        app: fmaas
+      annotations:
+        sidecar.istio.io/inject: "false"
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "8000"
+  service:
+    metaspec:
+      labels:
+        app: fmaas
+  configmap:
+     metaspec:
+       ext_name: config
+
+
+service:
+  type: ClusterIP
+  port: 9095
+
+cim:
+  container:
+    hostname: oam-sidecar
+    image:
+      repository: cim
+      tag: 21.2.2
+    resource:
+      limit_memory: 200Mi
+      limit_cpu: 120m
+      request_memory: 200Mi
+      request_cpu: 120m
+    ports:
+      server: 4222
+    mount:
+      type: Directory
+      container_path: /opt/logs
+      host_path: /data/logs
+
+replicaCount: 1
+
+fmaas:
+  container:
+    image:
+      hub: 10.1.34.190:5000
+      repository: fmaas
+      tag: 23.3.1-p3
+      pullPolicy: Always
+    resource:
+      limit_memory: 500Mi
+      limit_cpu: 200m
+      request_memory: 100Mi
+      request_cpu: 100m
+  init_container:
+    image:
+      repository: mtcil-svc-init
+      tag: 21.2.2
+
+scaling:
+  enabled: true
+  max_replicas: 2
+  min_replicas: 1
+  target_cpu_percentage: 70
+  target_memory_percentage: 90
+
+data:
+  datadir: ./data
+  KafkaAddress: "kafka-svc.mvnr-mtcil1-infra-mtcil-mtcil1:9092"
+  heartbeat:
+    defaultInterval: 60s
+  measurement:
+    defaultInterval: 30s
+    maxBufferingDuration: 1h
+    prometheus:
+      paas_endpoint: "http://paas-prometheus-server.mvnr-paas:9090"
+      timeout: 30s
+      keepalive: 30s
+  event:
+    maxSize: 2000000
+    retryInterval: 5s
+    maxMissed: 2
+  alertManager:
+    bind:
+      bindip: "0.0.0.0"
+      port: 9095
+  cluster:
+    debug: true
+    displayLogs: true
+  loglevel: "INFO"
+  watcherRetryInterval: "15s"
+  numberOfParitionsInFMAASEVENTS: 5
+  cgRestartInterval: 60
+  ownNamespaced: "false"
+  includeClusterDomain: true
+  productType: "MTCIL"
+  prefixLabelEnabled: "false"
+  prefixLabel: "mtcil.com/tmaas"
+  prefixLabelsList: "NFService,NFServiceInstance"
+  createClearEventId: "different"
+  MTCILInfo:
+    dnPrefix: "mvnr"
+    MGMT_IP: "0.0.0.0"
+
+  # collectorDetails:
+  #   - id: 1
+  #     primaryCollector:
+  #       fqdn: "mtcil-ves-simu.mtcil.svc.cluster.local"
+  #       port: 32704
+  #       secure: false
+  #       nbiFormat: "VES"
+  #       nbiType: "KAFKA"
+  #       kafkaBrokers: ["kafka-svc.mtcil.svc.cluster.local:9092"]
+  #       kafkaTopic: "test1"
+  #       heartbeat: true
+  #   - id: 2
+  #     primaryCollector:
+  #       fqdn: "10.2.11.11"
+  #       port: 32777
+  #       secure: false
+  #       nbiFormat: "VES"
+  #       nbiType: "REST"
+  #       kafkaBrokers: ["10.2.11.11:32704"]
+  #       kafkaTopic: "test3"
+  #       heartbeat: false
+  #     backupCollector:
+  #       fqdn: "10.2.11.11"
+  #       port: 32777
+  #       secure: false
+  #       nbiFormat: "VES"
+  #       nbiType: "REST"
+  #       kafkaBrokers: ["10.2.11.11:32704"]
+  #       kafkaTopic: "test4"
+  #       heartbeat: false
+
+  # vesdomains:
+  #   fault:
+  #     collectorList:
+  #       - id: 1
+  #   measurement:
+  #     collectorList:
+  #       - id: 1
+  #       - id: 2
+  #   notification:
+  #     collectorList:
+  #       - id: 2
+  #   tca:
+  #     collectorList:
+  #       - id: 1
+  #       - id: 2
+
+podConfig:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "fmaas"
+        topologyKey: kubernetes.io/hostname

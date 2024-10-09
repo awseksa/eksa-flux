@@ -1,0 +1,8 @@
+{
+    "config": {
+      "li_x2_gen_interface": {
+        "log_level": "{{.Values.li_x2_gen.log_level}}"
+      }
+    }
+  }
+  

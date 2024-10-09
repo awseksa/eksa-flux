@@ -1,0 +1,69 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.alertmanager.enabled -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Service
+metadata:
+{{- if .Values.alertmanager.service.annotations }}
+  annotations:
+{{ toYaml .Values.alertmanager.service.annotations | indent 4 }}
+{{- end }}
+  {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+  {{- if $custom_extensions.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  labels:
+    {{- include "prometheus.alertmanager.labels" . | nindent 4 }}
+{{- if .Values.alertmanager.service.labels }}
+{{ toYaml .Values.alertmanager.service.labels | indent 4 }}
+{{- end }}
+  {{- if $custom_extensions.labels -}}
+  {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  name: {{ template "prometheus.alertmanager.fullname" . }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+{{- if .Values.alertmanager.service.clusterIP }}
+  clusterIP: {{ .Values.alertmanager.service.clusterIP }}
+{{- end }}
+{{- if .Values.alertmanager.service.externalIPs }}
+  externalIPs:
+{{ toYaml .Values.alertmanager.service.externalIPs | indent 4 }}
+{{- end }}
+{{- if .Values.alertmanager.service.loadBalancerIP }}
+  loadBalancerIP: {{ .Values.alertmanager.service.loadBalancerIP }}
+{{- end }}
+{{- if .Values.alertmanager.service.loadBalancerSourceRanges }}
+  loadBalancerSourceRanges:
+  {{- range $cidr := .Values.alertmanager.service.loadBalancerSourceRanges }}
+    - {{ $cidr }}
+  {{- end }}
+{{- end }}
+  ports:
+    - name: http
+      port: {{ .Values.alertmanager.service.servicePort }}
+      protocol: TCP
+      targetPort: 9093
+    {{- if .Values.alertmanager.service.nodePort }}
+      nodePort: {{ .Values.alertmanager.service.nodePort }}
+    {{- end }}
+{{- if .Values.alertmanager.service.enableMeshPeer }}
+    - name: meshpeer
+      port: 6783
+      protocol: TCP
+      targetPort: 6783
+{{- end }}
+  selector:
+    {{- include "prometheus.alertmanager.matchLabels" . | nindent 4 }}
+{{- if .Values.alertmanager.service.sessionAffinity }}
+  sessionAffinity: {{ .Values.alertmanager.service.sessionAffinity }}
+{{- end }}
+  type: "{{ .Values.alertmanager.service.type }}"
+{{- end }}
+{{- end }}

@@ -1,0 +1,213 @@
+{
+    "events": {
+        "CimConnectEtcdFailure": {
+            "eventType": "COMMUNICATION",
+            "perceivedSeverity": "CRITICAL",
+            "probableCause": "etcd communication failure",
+            "specificProblem": "CIM unable to establish connection to etcd",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Ensure ETCD is up and running for connecting."
+        },
+        "RoleAssignmentStatus": {
+            "eventType": "HA_ROLE_ASSIGNMENT",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Role assignment status received for HA operation.",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required. incase of failure pod will be restarted."
+        },
+        "HAMonitoringFailure": {
+            "eventType": "HA_MONITORING",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "HA Failed To Monitor Application uS",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required. HAaaS  feature will perform auto recovery by restarting pod."
+        },
+        "LmaasTCPFailure": {
+            "eventType": "COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "TCP connection failure towards fluent-bit onbserved in LMaaS",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Ensure fluent-bit service is up and running with tcp port open for logging."
+        },
+        "CimCommitConfigSuccess": {
+            "eventType": "COMMIT_CONFIG",
+            "perceivedSeverity": "INFO",
+            "probableCause": "A commit-config operation towards etcd is successful",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "CimCommitConfigFailure": {
+            "eventType": "COMMIT_CONFIG",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "A commit-config operation failed towards etcd",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Ensure ETCD is up and running"
+        },
+        "CIMUpdateConfigSuccess": {
+            "eventType": "CONFIG_UPDATE",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Successfully updated CIM configuration",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "CIMUpdateConfigFailure": {
+            "eventType": "CONFIG_UPDATE",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "The update configuration interface between CIM and application is faulty or application rejected the configuration.",
+            "specificProblem": "The update configuration was not successful.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required. CMaaS will restart the POD."
+        },
+        "CIMUpdateConfigUnused": {
+            "eventType": "CONFIG_UPDATE",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Config patch unused by application",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "CIMUpdateConfigSuccessAfterFailure": {
+            "eventType": "COMMUNICATION",
+            "perceivedSeverity": "CLEAR",
+            "probableCause": "Update config successful after failing once.",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "CIMUpdateConfigFailure",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "Configured": {
+            "eventType": "CONFIGURATION",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Full configuration available for application to be ready",
+            "specificProblem": "Application is configured.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "NotConfigured": {
+            "eventType": "CONFIGURATION",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Full configuration unavailable for application to be ready",
+            "specificProblem": "Application is not configured.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Push Day-1 configuration"
+        },
+        "ScaleInStateNotify": {
+            "eventType": "HA",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Shutdown status received from application",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required. TMaaS will not scalein the pod incase of failure"
+        },
+        "ShutdownSuccess": {
+            "eventType": "SHUTDOWN",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Applicationn shutdown itself gracefully",
+            "specificProblem": "Application shutdown gracefully",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "ShutdownHookFailure": {
+            "eventType": "SHUTDOWN",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Application could not shutdown itself gracefully",
+            "specificProblem": "Application could not shutdown gracefully",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "ApplicationShutdownInitiated": {
+            "eventType": "SHUTDOWN",
+            "perceivedSeverity": "INFO",
+            "probableCause": "CIM notifies application to shutdown as it has received a termination signal",
+            "specificProblem": "CIM notifies application to shutdown as it has received a termination signal",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "CIMLoadConfigFailure": {
+            "eventType": "LOADCONFIG",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "The load configuration interface between CIM and application is faulty",
+            "specificProblem": "The load configuration was not successful.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": ""
+        },
+        "OperationsSpecRegistrationFailed": {
+            "eventType": "COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "Operation specification registration request for registering an operation with TMaaS. Malformed operation specification request for failure case",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Check the TMaaS logs for details and the operation specification request body."
+        },
+        "OperationsSpecRegistrationSuccess": {
+            "eventType": "COMMUNICATION",
+            "perceivedSeverity": "CLEAR",
+            "probableCause": "Operation registration request for registering an operation with TMaaS is successful.",
+            "specificProblem": "",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "OperationsSpecRegistrationFailed",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        }
+    }
+}

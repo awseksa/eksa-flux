@@ -1,0 +1,66 @@
+module mavenir-mtcil-limaas-proxy-dynamicroutes-config {
+    namespace "urn:mavenir:ns:yang:cnp:mtcil:limaas-proxy-dynamicroutes-23.3.1-20231215";
+    prefix mtcil-limaas-proxy-dynamicroutes;
+    import tailf-common { prefix tailf; }
+    revision "2022-12-30" {
+        description "Added LIMaaS Proxy dynamic routes config parameters";
+    }
+    container config {
+        tailf:callpoint configUpdate {
+            tailf:transaction-hook subtree;
+        }
+        list dynamic_routes {
+            key "route_name";
+            unique "route_name";
+            leaf route_name {
+                description "Route Config Unique Name";
+                type string;
+            }
+            leaf route_ip_version {
+                description "IP version of the route - allowed values are IPv4 or IPv6";
+                type enumeration {
+                    enum IPv4;
+                    enum IPv6;
+                }
+            }
+            leaf ipv4_destination_address {
+                description "Remote Destination IPv4 address";
+                type string;
+            }
+            leaf ipv4_mask {
+                description "Remote Destination IPv4 mask (in CIDR notation)";
+                type uint32 {
+                    range 0..32;
+                }
+            }
+            leaf ipv4_gateway_address {
+                description "Remote Gateway IPv4 address";
+                type string;
+            }
+            leaf ipv6_destination_address {
+                description "Remote Destination IPv6 address";
+                type string;
+            }
+            leaf ipv6_mask {
+                description "Remote Destination IPv6 mask (in CIDR notation)";
+                type uint32 {
+                    range 0..128;
+                }
+            }
+            leaf ipv6_gateway_address {
+                description "Remote Gateway IPv6 address";
+                type string;
+            }
+            leaf interface_name {
+                description "Fast Path Interface Name";
+                type string;
+            }
+            leaf metric {
+                description "Route Metric";
+                type uint32 {
+                    range 0..9999;
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,28 @@
+module mavenir-mtcil-limaas-proxy-general-config {
+    namespace "urn:mavenir:ns:yang:cnp:mtcil:limaas-proxy-general-23.3.1-20231215";
+    prefix mtcil-limaas-proxy-general;
+    import tailf-common { prefix tailf; }
+    revision "2020-09-07" {
+        description "Added limaas proxy general config parameters";
+    }
+    container config {
+        tailf:callpoint configUpdate {
+            tailf:transaction-hook subtree;
+        }
+        container li_x2_gen_interface {
+            description "The LI_X2 Interface component used to communicate between NF to MDF ";
+            leaf log_level {
+                type enumeration {
+                    enum INFO;
+                    enum DEBUG;
+                    enum ERROR;
+                    enum WARNING;
+                    enum EXCEPTION;
+                    enum ALL;
+                }
+                default "ERROR";
+                description "Defines the Log Level for LI Proxy Service";
+            }
+        } /*li_x2_gen_interface */
+    } /*limaasProxy_generalConfig */
+} /*mavenir-mtcil-limaasProxy */

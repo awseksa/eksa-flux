@@ -1,0 +1,141 @@
+{
+	"config": {
+        "log_level": "{{.Values.data.loglevel}}",
+		"dataRetentionPeriod": 0,
+		"collectorDetails":[
+			{{- if and (hasKey .Values.data "collectorDetails") (.Values.data.collectorDetails) }}
+			{{- $numCollectors := len .Values.data.collectorDetails }}
+			{{- range $i, $collectorDetail := .Values.data.collectorDetails -}}
+			{
+			"id": {{ $collectorDetail.id }},
+			"ruleList":[
+			    {{- if and (hasKey $collectorDetail "ruleList") ($collectorDetail.ruleList) }}
+				{{- $numruleList := len $collectorDetail.ruleList }}
+				{{- range $j, $ruleListDetail := $collectorDetail.ruleList -}}
+				{
+					"id": {{ $ruleListDetail.id }},
+					"name": "{{ $ruleListDetail.name }}",
+					"description": "{{ $ruleListDetail.description }}",
+					"action": "{{ $ruleListDetail.action }}",
+					"status": "{{ $ruleListDetail.status }}",
+					"ruleDetails":[
+					    {{- if and (hasKey $ruleListDetail "ruleDetails") ($ruleListDetail.ruleDetails) }}
+						{{- $numruleDetailList := len $ruleListDetail.ruleDetails }}
+						{{- range $k, $ruleDetail := $ruleListDetail.ruleDetails -}}
+						{
+							"ruleId": {{ $ruleDetail.ruleId }},
+							"ruleName": "{{ $ruleDetail.ruleName }}",
+							"ruleDescription": "{{ $ruleDetail.ruleDescription }}",
+							"rule":{
+								"field": "{{ $ruleDetail.rule.field }}",
+								"customField": "{{ $ruleDetail.rule.customField }}",
+								"value": "{{ $ruleDetail.rule.value }}",
+								"compareOper": "{{ $ruleDetail.rule.compareOper }}",
+								"status": "{{ $ruleDetail.rule.status }}"
+							},
+							"ruleOper": "{{ $ruleDetail.ruleOper }}"
+						}
+						{{- if (lt $k (sub $numruleDetailList 1)) -}} ,{{ end }}
+						{{ end -}}
+						{{- end }}
+					]
+				}
+				{{- if (lt $j (sub $numruleList 1)) -}} ,{{ end }}
+				{{ end -}}
+				{{- end }}
+			],
+			"primaryCollector": {
+			   "fqdn":"{{ $collectorDetail.primaryCollector.fqdn }}",
+			   "port":{{ $collectorDetail.primaryCollector.port }},
+			   "secure":{{ $collectorDetail.primaryCollector.secure }},
+			   "user":"{{ $collectorDetail.primaryCollector.user }}",
+			   "password":"{{ $collectorDetail.primaryCollector.password }}",
+			   "passphrase":"{{ $collectorDetail.primaryCollector.passphrase }}",
+			   "nbiFormat":"{{ $collectorDetail.primaryCollector.nbiFormat }}",
+			   "nbiType":"{{ $collectorDetail.primaryCollector.nbiType }}",
+			   "kafkaBrokers":{{ toPrettyJson ($collectorDetail.primaryCollector.kafkaBrokers) | indent 16 | trim }},
+			   "kafkaTopic":"{{ $collectorDetail.primaryCollector.kafkaTopic }}",
+			   {{- if hasKey $collectorDetail.primaryCollector "heartbeat" }}
+			   {{- if eq ($collectorDetail.primaryCollector.heartbeat| toString) "" }}
+			   "heartbeat": true
+			   {{- else }}
+			   "heartbeat":{{ $collectorDetail.primaryCollector.heartbeat }}
+			   {{- end }}
+			   {{- else }}
+			   "heartbeat": true
+			   {{- end }}
+			}
+			{{- if and (hasKey $collectorDetail "backupCollector") ($collectorDetail.backupCollector) -}}
+			,
+			"backupCollector": {{ toPrettyJson ($collectorDetail.backupCollector) | indent 14 | trim }}
+			{{- end }}
+			}
+			{{- if (lt $i (sub $numCollectors 1)) -}} ,{{ end }}
+			{{ end -}}
+			{{- end }}
+		 ],
+		 {{- if and (hasKey .Values.data "vesdomains") (.Values.data.vesdomains) }}
+		 "vesdomains": {{ toPrettyJson (.Values.data.vesdomains) | indent 10 | trim }}
+		 {{- else }}
+		 "vesdomains":{
+			"fault":{
+			   "collectorList":[
+				  {
+					 "id":1
+				  }
+			   ]
+			},
+			"notification":{
+			   "collectorList":[
+				  {
+					 "id":1
+				  }
+			   ]
+			},
+			"tca":{
+			   "collectorList":[
+				  {
+					 "id":1
+				  }
+			   ]
+			},
+			"measurement":{
+			   "collectorList":[
+				  {
+					 "id":1
+				  }
+			   ]
+			}
+		 }
+		 {{- end }},
+		 "heartbeat":{
+			"defaultInterval":"60s"
+		 },
+		 "measurement":{
+			"defaultInterval":"30s",
+			"maxBufferingDuration":"1h",
+			"prometheus":{
+			   {{- if hasKey .Values "prometheus_address" }}
+				   "address":"{{ .Values.prometheus_address }}",
+			   {{- else }}
+				   "address": {{ printf "http://%s-prometheus-server:9090" .Release.Name | quote }},
+			   {{- end }}
+			   "timeout":"30s",
+			   "keepalive":"30s"
+			}
+		 },
+		 "event":{
+			"maxSize":2000000,
+			"retryInterval":"5s",
+			"maxMissed":2
+		 },
+		 "alertManager":{
+			"bind":"0.0.0.0:9095"
+		 },
+		 "cluster":{
+			"debug":true,
+			"displayLogs":true
+		 }
+	}
+}
+

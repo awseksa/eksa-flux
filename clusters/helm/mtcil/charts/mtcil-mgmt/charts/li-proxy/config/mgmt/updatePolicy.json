@@ -1,0 +1,6 @@
+{   
+    "limaasProxyGeneralConfig": "Dynamic",
+    "limaasProxyAdminConfig": "Dynamic",
+    "cim": "Dynamic",
+    "limaasProxyDynamicRoutesConfig": "Dynamic"
+}

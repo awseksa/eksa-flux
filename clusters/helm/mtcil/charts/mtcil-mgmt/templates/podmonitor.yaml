@@ -1,0 +1,126 @@
+{{- if .Values.global.mtcil.enablePodmonitorProvisioning }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    release: kube-prometheus-stack
+  name: {{ .Release.Name }}-{{.Values.global.nf.mtcilId}}-alinged
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  jobLabel: pod-monitor
+  namespaceSelector: 
+  {{- if not .Values.global.mtcil.scope.namespaced }}
+    any: true
+  {{- else if and .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+    matchNames:
+  {{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+    - {{ . }}
+  {{- end }} 
+  {{- end }}
+  podMetricsEndpoints:
+  - interval: 15s
+    metricRelabelings:
+    - action: labeldrop
+      regex: aligned_ts
+    path: /metrics/aligned
+    port: metrics
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_namespace
+      targetLabel: kubernetes_namespace
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_pod_name
+      targetLabel: kubernetes_pod_name
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+  selector:
+    matchLabels:
+      mtcil.com/mmaas_clock_aligned: "true"
+      mtcilId: {{ .Values.global.nf.mtcilId }} 
+---
+
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    release: kube-prometheus-stack
+  name: {{ .Release.Name }}-{{.Values.global.nf.mtcilId}}-default
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  jobLabel: pod-monitor
+  namespaceSelector:
+  {{- if not .Values.global.mtcil.scope.namespaced }}
+    any: true
+  {{- else if and .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+    matchNames:
+  {{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+    - {{ . }}
+  {{- end }} 
+  {{- end }}
+  podMetricsEndpoints:
+  - interval: 15s
+    path: /metrics
+    port: metrics
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_namespace
+      targetLabel: kubernetes_namespace
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_pod_name
+      targetLabel: kubernetes_pod_name
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+  selector:
+    matchExpressions:
+    - key: mtcilId
+      operator: In
+      values:
+      - {{ .Values.global.nf.mtcilId }}
+    - key: mtcil.com/mmaas_clock_aligned
+      operator: DoesNotExist
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  labels:
+    release: kube-prometheus-stack
+  name: {{ .Release.Name }}-{{.Values.global.nf.mtcilId}}-non-alinged
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  jobLabel: pod-monitor
+  namespaceSelector:
+  {{- if not .Values.global.mtcil.scope.namespaced }}
+    any: true
+  {{- else if and .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+    matchNames:
+  {{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+    - {{ . }}
+  {{- end }} 
+  {{- end }}
+  podMetricsEndpoints:
+  - interval: 15s
+    path: /metrics
+    port: metrics
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_namespace
+      targetLabel: kubernetes_namespace
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_pod_name
+      targetLabel: kubernetes_pod_name
+    - action: labelmap
+      regex: __meta_kubernetes_pod_label_(.+)
+  selector:
+    matchLabels:
+      mtcil.com/mmaas_clock_aligned: "false"
+      mtcilId: {{ .Values.global.nf.mtcilId }}
+{{- end }}

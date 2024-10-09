@@ -1,0 +1,92 @@
+nf:
+  version: "v0.1.12-3"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1" #do not edit
+  nfClass: "infra"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: false
+      metaspec:
+        annotations:
+          configMgmt: enabled
+    static_cfg:
+      create: false
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: false
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+zk_app_name_prefix: ""
+
+componentSpec:
+  deployment:
+    pod_metaspec:
+      labels:
+        app: zk-exporter
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9141"
+
+
+common:
+  app_name: zk-exporter
+  svc_app_name: svc-discovery
+
+initContainers:
+  image:
+    repository: mtcil-svc-init
+
+container:
+  replica_count: 1
+  zk_endpoint_count: 1
+  image:
+    hub: 10.1.34.114:5000
+    repository: zookeeper-exporter
+    tag: v0.1.12-3
+  resource:
+    limit_memory: 50Mi
+    limit_cpu: 50m
+    requests_memory: 50Mi
+    requests_cpu: 50m
+  ports:  
+    client: 9141
+
+podConfig:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "zk-exporter"
+        topologyKey: kubernetes.io/hostname

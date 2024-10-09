@@ -1,0 +1,11 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{ $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.create_ns) (eq .Values.global.mtcil.use_release_ns false) -}}
+apiVersion: v1
+kind: Namespace
+{{- $_ := set $cnfHdr.nfVariables "component_name" ($cnfHdr.nfVariables.nfPrefix|toString) -}}
+{{- $_ := set $cnfHdr.nfVariables "create_meta_ns" "false" -}}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" $cnfHdr.nfVariables.root.Values.nf.cnftpl_namespaces.metaspec) }}
+{{- end -}}
+{{- end }}

@@ -1,0 +1,191 @@
+######## CNF TEMPLATE DEFINITIONS ###########
+
+nf:
+  version: "23.3.1-p3"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1"
+  nfClass: "mgmt"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: true
+      metaspec:
+        annotations:
+          configMgmt: enabled
+    static_cfg:
+      create: true
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: true 
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+###########################################
+
+namespace: mvnr-mtcil1-mgmt-mtcil-mtcil1
+
+hub: 10.1.34.105:5000
+
+etcd_svc_fqdn: "etcd.mvnr-mtcil1-infra-mtcil-mtcil1:2379"
+kafka_svc_fqdn: "kafka-svc.mvnr-mtcil1-infra-mtcil-mtcil1:9092"
+udsf_add: "http://udsf-core.mvnr-mtcil1-appln-udsf-udsf1:3000"
+encrypt_enabled: false
+default_destinations_reqd: false
+x1_1_encrypt_enabled: false
+t3_encrypt_enabled: true
+operator_name: "OPERATOR"
+product_name: "5GC"
+upf_ca_cert_name: "ca-cert.pem"
+upf_server_name: "upf"
+#admf_server_name is depricated, use AdmfSANValue in limaasAdminDay0.yang
+admf_server_name: "admf"
+rest_json_type: "sgsn2g"
+list_of_nfs: "testapp,smf"
+max_xid_per_gr: "500"
+cli_tls_min_ver: 1.2
+cli_tls_max_ver: 1.3
+server_tls_min_ver: 1.2
+server_tls_max_ver: 1.3
+mtls_enabled: true
+
+ingress:
+  metallb:
+    addressPool:
+    lbIngressIP:
+  istio:
+    enabled: false
+# aws_region: "us-east-1" #Use it for AWS environment only
+
+common:
+  app_name: li-manager
+
+replica_count: 1
+
+componentSpec:
+  deployment:
+    pod_metaspec:
+      labels:
+        app: li-manager
+      annotations:
+        sidecar.istio.io/inject: "false"
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+        prometheus.io/port: "9090"
+        k8s.v1.cni.cncf.io/networks: li-manager-macvlan-conf-1
+
+  service:
+    metaspec:
+      labels:
+        app: li-manager
+
+li_manager:
+  image:
+    hub: 10.1.34.105:5000
+    repository: li-manager
+    tag: 23.3.1-p3
+    pullPolicy: Always 
+  resource:
+    limit_memory: 500Mi
+    limit_cpu: 200m
+    request_memory: 100Mi
+    request_cpu: 100m
+  init_container:
+    image:
+      repository: mtcil-svc-init
+      tag: 21.2.2
+  containerConfig:
+    securityContext:
+      allowPrivilegeEscalation: true
+      capabilities:
+        add:
+        - NET_ADMIN
+      privileged: false
+
+cim:
+  container:
+    hostname: cim
+    image:
+      repository: cim
+      tag: 21.2.2
+    resource:
+      limit_memory: 500Mi
+      limit_cpu: 200m
+      request_memory: 100Mi
+      request_cpu: 100m
+    ports: 
+      server: 4222
+    mount:
+      type: Directory
+      container_path: /opt/logs
+      host_path: /data/logs
+
+li:
+  log_level: "ERROR"
+
+li_x1:
+  time1: 5
+  time2: 15
+  remove_all_destinations: false
+  deactivate_all_tasks: true
+  n_retry: 3
+
+network:
+  componentSpec:
+    deployment:
+      network_metaspec:
+        ext_name: macvlan-conf-1
+        labels:
+          app: iked
+  apiVersion: k8s.cni.cncf.io/v1 #use robin.io for robin bundle
+  cniVersion: 0.3.0
+  type: macvlan
+#  spec:
+#    config:
+#      master: eth0
+#      mode: bridge
+#      ipam:
+#        type: whereabouts
+#        datastore: kubernetes
+#        kubernetes:
+#            kubeconfig: /etc/cni/net.d/whereabouts.d/whereabouts.kubeconfig
+#        ranges:
+#        - - gateway: 172.51.1.1
+#            rangeEnd: 172.51.1.80
+#            rangeStart: 172.51.1.60
+#            subnet: 172.51.1.0/24
+
+podConfig:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "li-manager"
+        topologyKey: kubernetes.io/hostname

@@ -1,0 +1,149 @@
+######## CNF TEMPLATE DEFINITIONS ###########
+nf:
+  version: "23.3.1-p5"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1" #do not edit
+  nfClass: "mgmt"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: true
+      metaspec: 
+         annotations:
+            configMgmt: enabled
+    static_cfg: 
+      create: true
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: true
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+
+namespace: mvnr-mtcil1-mgmt-mtcil-mtcil1
+jvm_options: "-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath=/confd/apps/logs/cmaas-mtcil-hdump.hprof"
+pollFrequency: 30
+resyncPeriod: 5
+common: 
+  app_name: config-service
+
+componentSpec:
+  deployment:
+    pod_metaspec:
+      labels:
+        app: config-service
+      annotations:
+        sidecar.istio.io/inject: "false"
+        prometheus.io/scrape: "true"
+        prometheus.io/path: /metrics
+
+  service: 
+    metaspec:
+      labels:
+        app: config-service
+
+serviceAccount: config-serviceaccount
+replica_count: 1
+hub: 10.1.1.1:5000
+changeset_lease: 120
+mutex_timeout: 100
+batch_size: 1
+check_yang_version_on_upgrade: true
+config_service:
+  init_container:
+    image:
+      repository: mtcil-svc-init
+      tag: 21.2.2
+  container:
+    hostname: config-service
+    image:
+      repository: config-service
+      tag: 23.3.1-p5 #replaced by build script
+    resource:
+      limit_memory: 1000Mi
+      limit_cpu: 1000m
+      request_memory: 400Mi
+      request_cpu: 300m
+    livenessProbe:
+      initialDelaySeconds: 180
+oam_sidecar:
+  container:
+    hostname: cim
+    image:
+      repository: cim
+      tag: 21.2.2
+    resource:
+      limit_memory: 200Mi
+      limit_cpu: 100m
+      request_memory: 100Mi
+      request_cpu: 100m
+    ports: 
+      server: 4222
+    mount:
+      type: Directory
+      container_path: /opt/logs
+      host_path: /data/logs
+
+etcd_svc_fqdn: "etcd.mvnr-mtcil1-infra-mtcil-mtcil1:2379"
+kafka_svc_fqdn: "kafka-svc.mvnr-mtcil1-infra-mtcil-mtcil1:9092"
+k8s_svc_fqdn: "kubernetes.default"
+zk_svc_fqdn: "zk-0.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181,zk-1.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181,zk-2.zk.mvnr-mtcil1-infra-mtcil-mtcil1:2181"
+
+volume:
+  name: config-service-pv
+  pathprefix: mtcil-volumes/config-service-pv
+  pvenabled: true
+  storage: 1Gi
+  accessModes: "ReadWriteOnce"
+  reclaimPolicy: "Delete"
+  storageClassName: ""
+  emptyDir:
+    sizeLimit: 200Mi
+
+confdConfig:
+  maxSessions:
+    total: 300
+    cli: 10
+    rest: 100
+    netconf: 100
+
+podConfig:
+
+volumeClaimMetadata:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "config-service"
+        topologyKey: kubernetes.io/hostname
+
+

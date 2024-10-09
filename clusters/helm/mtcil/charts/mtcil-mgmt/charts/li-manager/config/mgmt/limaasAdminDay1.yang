@@ -1,0 +1,129 @@
+module mavenir-mtcil-limaas-manager-adminday1-config {
+    namespace "urn:mavenir:ns:yang:cnp:mtcil:limaas-manager-adminday1-23.3.1-20231215";
+    prefix mtcil-limaas-manager-adminday1;
+    import tailf-common { prefix tailf; }
+    revision "2020-09-07" {
+        description "Added limaas manager admin day1 config parameters";
+    }
+    container config {
+        tailf:callpoint configUpdate {
+            tailf:transaction-hook subtree;
+        }
+        container vz_interface {
+          description "The LI VZ interface is used to configure destination details for VZ";
+          list destinations {
+              key did;
+              unique "did";
+              leaf did {
+                  type string;
+                  description "UUID Format of the Destination Identity (DID) value";
+              }
+              leaf ip4 {
+                  type "string";
+                  description "IPv4 address of the destination";
+              }
+              leaf ip6 {
+                  type "string";
+                  description "IPv6 address of the destination";
+              }
+              leaf port {
+                  type int32;
+                  description "Port number which the destination will listen on";
+              }
+              leaf peerid {
+                  type "string";
+                  description "ID with which other components in the same network will identify this destination";
+              }
+          }
+        }
+        container li_x1_1_interface {
+          description "The LI_X1_1 Interface component towards ADMF, supports LI Manager to communicate with SAEGWC and SGSN";
+          list default_df2s {
+            key "destination_key";
+            unique "destination_key";
+            leaf destination_key {
+              type string;
+              default "df2";
+              description "This holds the Destination Key which is a combination if DID (in UUID Format) and NEID in DID_NEID format";
+            }
+            leaf did {
+              type string;
+              default "df2";
+              description "UUID Format of the Destination Identity (DID) value";
+            }
+            leaf did_name {
+              type string;
+              description "This holds the name of the destination in user-friendly format";
+            }
+            leaf delivery_type {
+              type enumeration {
+                enum X2Only;
+                enum X3Only;
+                enum X2andX3;
+              }
+              default "X2Only";
+              description "The Delivery type of the DF2 is X2Only";
+            }
+            leaf did_address_ip {
+              type string;
+              default "0.0.0.0";
+              description "IP-Address of the DID";
+            }
+            leaf did_address_port {
+              type uint32 {
+                range "0 .. 65535";
+              }
+              default 80;
+              description "Port of the DID";
+            }
+            leaf did_uri {
+              type string;
+              description "FQDN of the DID.. Populate either IP:PORT or URI, not both";
+            }
+          } /*default_df2s */
+          list default_df3s {
+            key "destination_key";
+            unique "destination_key";
+            leaf destination_key {
+              type string;
+              default "df3";
+              description "This holds the Destination Key which is a combination if DID (in UUID Format) and NEID in DID_NEID format";
+            }
+            leaf did {
+              type string;
+              default "df3";
+              description "UUID Format of the Destination Identity (DID) value";
+            }
+            leaf did_name {
+              type string;
+              description "This holds the name of the destination in user-friendly format";
+            }
+            leaf delivery_type {
+              type enumeration {
+                enum X2Only;
+                enum X3Only;
+                enum X2andX3;
+              }
+              default "X3Only";
+              description "The Delivery type of the DF3 is X3Only";
+            }
+            leaf did_address_ip {
+              type string;
+              default "0.0.0.0";
+              description "IP-Address of the DID";
+            }
+            leaf did_address_port {
+              type uint32 {
+                range "0 .. 65535";
+              }
+              default 80;
+              description "Port of the DID";
+            }
+            leaf did_uri {
+              type string;
+              description "FQDN of the DID.. Populate either IP:PORT or URI, not both";
+            }
+          } /*default_df3s */
+        } /*li_x1_1_interface */
+    } /*limaas_config */
+} /*mavenir-mtcil-limaas */

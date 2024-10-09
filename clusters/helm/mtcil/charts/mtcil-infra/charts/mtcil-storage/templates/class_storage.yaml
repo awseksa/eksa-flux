@@ -1,0 +1,16 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.global.mtcil.infra_deploy -}}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.storage) (.Values.global.mtcil.storage.isProviderMTCIL) }}
+{{- $dot := . -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+kind: StorageClass
+apiVersion: storage.k8s.io/v1
+metadata:
+  name: {{ printf "%s" ( ternary ( $cnfHdr.nfVariables.mtcilId | toString ) "mtcil" .Values.global.mtcil.storage.mtcilIdPrefixed ) }}-local-storage
+provisioner: {{ .Values.mtcilStorage.volume.provisioner }}
+reclaimPolicy: {{ .Values.mtcilStorage.volume.reclaimPolicy }}
+volumeBindingMode: {{ .Values.mtcilStorage.volume.volumeBindingMode }}
+{{- end -}}
+{{- end -}}
+{{- end }}

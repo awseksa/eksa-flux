@@ -1,0 +1,165 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.server.enabled -}}
+{{- if (empty .Values.server.configMapOverrideName) -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  labels:
+    {{- include "prometheus.server.labels" . | nindent 4 }}
+  {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+  {{- if $custom_extensions.annotations -}}
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  {{- if $custom_extensions.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  name: {{ template "prometheus.server.fullname" . }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+data:
+{{- $root := . }}
+{{- range $key, $value := .Values.serverFiles }}
+  {{ $key }}: |
+{{- if eq $key "alerts" }}
+{{- if and (not (empty $value)) (empty $value.groups) }}
+    groups:
+{{- range $ruleKey, $ruleValue := $value }}
+    - name: {{ $ruleKey -}}.rules
+      rules:
+{{ $ruleValue | toYaml | trimSuffix "\n" | indent 6 }}
+{{- end }}
+{{- else }}
+{{ toYaml $value | indent 4 }}
+{{- end }}
+{{- else }}
+{{ toYaml $value | default "{}" | indent 4 }}
+{{- end }}
+
+{{- end }}
+  prometheus.yml: |
+    rule_files:
+      - /etc/config/recording_rules.yml
+      - /etc/config/alerting_rules.yml
+      - /etc/config/rules
+      - /etc/config/*alerts*
+    scrape_configs:
+    {{- if .Values.promConfig.scrapeJob.prometheus }} 
+      - job_name: prometheus
+        static_configs:
+          - targets:
+            - localhost:9090
+    {{- end }}
+      - job_name: 'kubernetes-pods'
+        metric_relabel_configs:
+        - separator: ;
+          regex: aligned_ts
+          replacement: $1
+          action: labeldrop          
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+          {{- if eq $root.Values.promConfig.scrapeJob.k8sPod.ipVersion "IPV4" }}
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+          {{- else }}
+            regex: (.+):(?:\d+);(\d+)
+            replacement: ${1}:${2}
+          {{- end }}
+            target_label: __address__
+          - source_labels: [__meta_kubernetes_pod_annotation_mtcil_com_tmaas]
+            separator: ;
+          {{- if .Values.promConfig.scrapeJob.k8sPod.annotation  }}
+            regex: '{{.Values.promConfig.scrapeJob.k8sPod.annotation.regex }}'
+          {{- else }}
+            regex: '{ .*[^:]+"mtcilId": {{ $cnfHdr.nfVariables.mtcilId | quote }}, .*}'
+          {{- end }}  
+            replacement: $1
+            action: keep   
+          - action: labelmap
+            regex: __meta_kubernetes_pod_label_(.+)
+          - source_labels: [__meta_kubernetes_namespace]
+            action: replace
+            target_label: kubernetes_namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            action: replace
+            target_label: kubernetes_pod_name
+        kubernetes_sd_configs:
+          - role: pod
+          {{- if and .Values.global.mtcil.scope.namespaced (not .Values.global.mtcil.scope.namespaceList) }}
+            namespaces:
+              names:
+              - {{ $cnfHdr.nfVariables.nfPrefix }}
+          {{- end }}
+          {{- if and .Values.global.mtcil.scope.namespaced ( .Values.global.mtcil.scope.namespaceList) }}        
+            namespaces:
+              names:
+              {{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+              - {{ $namespace }}
+              {{- end -}}
+          {{- end }}
+    global:
+{{ $root.Values.promConfig.globalConfig | toYaml | trimSuffix "\n" | indent 6 }}
+{{- if $root.Values.promConfig.remoteWrite }}
+    remote_write:
+{{ $root.Values.promConfig.remoteWrite | toYaml | indent 4 }}
+{{- end }}
+{{- if $root.Values.promConfig.remoteRead }}
+    remote_read:
+{{ $root.Values.promConfig.remoteRead | toYaml | indent 4 }}
+{{- end }}
+{{- if or ($root.Values.alertmanager.enabled) ($root.Values.server.alertmanagers) }}
+    alerting:
+{{- if $root.Values.alertRelabelConfigs }}
+{{ $root.Values.alertRelabelConfigs | toYaml  | trimSuffix "\n" | indent 6 }}
+{{- end }}
+      alertmanagers:
+{{- if $root.Values.server.alertmanagers }}
+{{ toYaml $root.Values.server.alertmanagers | indent 8 }}
+{{- else }}
+      - kubernetes_sd_configs:
+          - role: pod
+        tls_config:
+          ca_file: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        bearer_token_file: /var/run/secrets/kubernetes.io/serviceaccount/token
+        {{- if $root.Values.alertmanager.prefixURL }}
+        path_prefix: {{ $root.Values.alertmanager.prefixURL }}
+        {{- end }}
+        relabel_configs:
+        - source_labels: [__meta_kubernetes_namespace]
+          regex: {{ $cnfHdr.nfVariables.nfPrefix }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_app]
+          regex: {{ template "prometheus.name" $root }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_label_component]
+          regex: alertmanager
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_probe]
+          regex: {{ index $root.Values.alertmanager.podAnnotations "prometheus.io/probe" | default ".*" }}
+          action: keep
+        - source_labels: [__meta_kubernetes_pod_container_port_number]
+          regex:
+          action: drop
+      {{- if .Values.global.mtcil.scope.namespaced }}
+      - static_configs:
+        - targets:
+          - {{ .Release.Name }}-prometheus-alertmanager.{{ $cnfHdr.nfVariables.nfPrefix }}.svc.cluster.local:80
+      {{- end }}    
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end }}

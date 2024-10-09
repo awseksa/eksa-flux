@@ -1,0 +1,157 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.certmanager) (.Values.global.mtcil.enableServiceprovisioning)) }} 
+{{- if and .Values.enabled (.Values.cainjector.enabled) -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  {{- if .Values.cainjector.app_name_prefix }}
+  name: {{ .Values.cainjector.app_name_prefix }}
+  {{- else }}
+  name: {{ include "cainjector.fullname" . }}
+  {{- end }}
+  namespace: {{ template "cert-manager.namespace" . }}
+  labels:
+    {{ template "cert-manager.metadata.mtcillabels" (dict "specOffset" 4 "dot" .) }}
+    app: {{ include "cainjector.name" . }}
+    app.kubernetes.io/name: {{ include "cainjector.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "cainjector"
+    helm.sh/chart: {{ include "cainjector.chart" . }}
+    {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+    {{- $pod_metaspec := .Values.cainjector.componentSpec | default dict -}}
+    {{- if $custom_extensions.labels -}}
+    {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  annotations:
+    {{- if .Values.cainjector.app_name_prefix }}
+    {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 4 "dot" . "nfService" .Values.cainjector.app_name_prefix ) }}
+    {{- else }}
+    {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 4 "dot" . "nfService" (include "cainjector.fullname" .)) }}
+    {{- end }}
+  {{- if .Values.cainjector.deploymentAnnotations }}
+{{ toYaml .Values.cainjector.deploymentAnnotations | indent 4 }}
+  {{- end }}
+  {{- if $custom_extensions.annotations -}}
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.cainjector.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "cainjector.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "cainjector"
+  {{- with .Values.cainjector.strategy }}
+  strategy:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      namespace: {{ template "cert-manager.namespace" . }}
+      labels:
+        {{ template "cert-manager.metadata.mtcillabels" (dict "specOffset" 8 "dot" .) }}
+        app: {{ include "cainjector.name" . }}
+        app.kubernetes.io/name: {{ include "cainjector.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        app.kubernetes.io/component: "cainjector"
+        helm.sh/chart: {{ include "cainjector.chart" . }}
+{{- if .Values.cainjector.podLabels }}
+{{ toYaml .Values.cainjector.podLabels | indent 8 }}
+{{- end }}
+       {{- if $custom_extensions.labels -}}
+       {{- range $key, $value := .Values.global.custom_extensions.labels }}
+        {{ $key }}: {{ $value | quote }}
+       {{- end }}
+       {{- end }}
+        {{- if $pod_metaspec.deployment -}}
+        {{- range $key, $value := $pod_metaspec.deployment.pod_metaspec.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      annotations:
+        {{- if .Values.cainjector.app_name_prefix }}
+        {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 8 "dot" . "nfService" .Values.cainjector.app_name_prefix ) }}
+        {{- else }}
+        {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 8 "dot" . "nfService" (include "cainjector.fullname" .)) }}
+        {{- end }}
+      {{- if .Values.cainjector.podAnnotations }}
+{{ toYaml .Values.cainjector.podAnnotations | indent 8 }}
+      {{- end }}
+      {{- if $custom_extensions.annotations -}}
+      {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+    spec:
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- else if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+
+{{- if  .Values.cainjector.affinity }}
+      affinity:
+{{ toYaml .Values.cainjector.affinity | indent 8 }}
+{{- end }}
+
+      serviceAccountName: {{ template "cainjector.serviceAccountName" . }}
+      {{- if .Values.global.priorityClassName }}
+      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.cainjector.securityContext}}
+      securityContext:
+{{ toYaml .Values.cainjector.securityContext | indent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.global.hub }}/{{ .Values.cainjector.image.repository }}:{{ .Values.cainjector.image.tag }}
+          imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 10 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 10 }}
+{{- end }}
+          args:
+          {{- if .Values.global.logLevel }}
+          - --v={{ .Values.global.logLevel }}
+          {{- end }}
+          - --leader-election-namespace={{ template "cert-manager.namespace" . }}
+          {{- with .Values.global.leaderElection }}
+          {{- if .leaseDuration }}
+          - --leader-election-lease-duration={{ .leaseDuration }}
+          {{- end }}
+          {{- if .renewDeadline }}
+          - --leader-election-renew-deadline={{ .renewDeadline }}
+          {{- end }}
+          {{- if .retryPeriod }}
+          - --leader-election-retry-period={{ .retryPeriod }}
+          {{- end }}
+          {{- end }}
+          {{- if (and (.Values.global.mtcil.scope.namespaced) ( not .Values.global.mtcil.scope.namespaceList)) }}
+          - --namespace={{ template "cert-manager.namespace" . }}
+          {{- end }}
+          {{- if .Values.cainjector.extraArgs }}
+{{ toYaml .Values.cainjector.extraArgs | indent 10 }}
+          {{- end }}
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          resources:
+{{ toYaml .Values.cainjector.resources | indent 12 }}
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+      {{- end }}
+    {{- with .Values.cainjector.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- end -}}
+{{- end }}

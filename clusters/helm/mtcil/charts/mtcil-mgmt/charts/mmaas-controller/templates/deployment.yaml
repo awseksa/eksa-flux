@@ -1,0 +1,104 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.mmaas_enabled -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: apps/v1
+kind: Deployment
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec))) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+{{- end }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.componentSpec.deployment.pod_metaspec.labels.app }}
+  template: 
+    {{- if .Values.app_name_prefix }}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- else }}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+    {{- end }}
+    spec: 
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.mgmtNodeSelector) (.Values.global.mtcil.mgmtNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.mgmtNodeSelector.labelKey }}: {{ .Values.global.mtcil.mgmtNodeSelector.labelValue | quote }}
+      {{- end }}   
+      serviceAccountName: mtcil-sa
+      containers:
+      - name: mmaas-controller
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+        {{- else }}
+        image: {{ .Values.hub }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        command: ["/bin/sh"]
+        args: ["-c", "mmaas-controller"]
+        resources:
+          requests:
+            cpu: {{ .Values.resource.request_cpu }}
+            memory: {{ .Values.resource.request_memory }}
+          limits:
+            cpu: {{ .Values.resource.limit_cpu }}
+            memory: {{ .Values.resource.limit_memory }}  
+        env:  
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+             fieldPath: metadata.namespace
+        - name: PROMETHEUS_CM
+          value: mtcil-prometheus-server
+        - name: TZ
+          value: {{ .Values.global.timezone | quote }}
+        - name: IS_NAMESPACED
+          value: "{{ .Values.global.mtcil.scope.namespaced }}"
+        - name: RELEASE_NAME
+          value: {{ .Release.Name }}
+        - name: PROM_CMAP_RETRY_COUNT
+          value: {{ .Values.promcmap_retrycount | quote }}
+        - name: SCRAPE_LEVEL
+          value: {{ .Values.mtcil_scrape_level }}
+        - name: GLOBAL_SCRAPE_INTERVAL
+          value: {{ .Values.mtcil_global_scrape_interval }}
+        - name: IMAGE_REPO
+          value: {{ .Values.global.hub }}
+        - name: MTCIL_PROMETHEUS
+          value: {{ .Values.mtcil_prometheus }}
+        - name: PROMETHEUS_OPEARTOR
+          value: {{ .Values.prometheus_operator }}
+        {{- if eq (.Values.prometheus_operator | toString) "enable" }}
+        - name: PROM_OP_RULE_SELECTOR
+          value: {{ .Values.prom_rule_selector }}
+        - name: PROM_OP_POD_MONITOR_SELECTOR
+          value: {{ .Values.pod_monitor_selector }}
+        - name: OPEARTOR_NAMESPACE
+          value: {{ .Values.operator_namespace }}
+        - name: PM_SCRAPE_NAMESPACE
+          value: {{ .Values.scrape_namespace }}
+        - name: NON_CLOCK_ALIGNED_PORT_NAMES
+          value: {{ .Values.non_clock_aligned_port_names }}
+        - name: CLOCK_ALIGNED_PORT_NAMES
+          value: {{ .Values.clock_aligned_port_names }}
+        {{- end }}
+      restartPolicy: Always
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+
+{{- end -}}
+{{- end }}

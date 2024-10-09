@@ -1,0 +1,21 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.limaasEnabled) -}}
+{{- if (hasKey .Values.componentSpec.deployment.pod_metaspec.annotations "robin.io/networks") }}
+{{- else }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: {{ .Values.network.apiVersion | quote }}
+kind: NetworkAttachmentDefinition
+{{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.network.componentSpec.deployment.network_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" (index .Values.componentSpec.deployment.pod_metaspec.annotations "k8s.v1.cni.cncf.io/networks"))))}}
+spec:
+  config: '{
+            "cniVersion": {{ .Values.network.cniVersion | quote }},
+            "type": {{ .Values.network.type | quote }},
+            "master": {{ .Values.network.spec.config.master | quote }},
+            "mode": {{ .Values.network.spec.config.mode | quote }},
+            "ipam": {{ toJson .Values.network.spec.config.ipam }}
+           }'
+{{- end }}
+{{- end -}}
+{{- end }}
+ 

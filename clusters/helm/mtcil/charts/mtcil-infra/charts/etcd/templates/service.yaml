@@ -1,0 +1,20 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.global.mtcil.infra_deploy -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Service
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.service.metaspec) }}
+spec:
+  type: {{ .Values.service.svc_type }}
+  ports:
+  - port: {{ .Values.service.ports.client }} 
+    name: client
+  - port: {{ .Values.service.ports.server }} 
+    name: server
+  - port: {{ .Values.service.ports.http }} 
+    name: http
+  selector:
+    app: {{ .Values.common.app_name }}
+{{- end -}}
+{{- end }}

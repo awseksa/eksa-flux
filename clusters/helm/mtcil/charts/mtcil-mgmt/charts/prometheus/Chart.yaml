@@ -1,0 +1,16 @@
+annotations:
+  charts.openshift.io/name: mtcil
+apiVersion: v1
+appVersion: 2.19.0
+description: Prometheus is a monitoring system and time series database.
+home: https://prometheus.io/
+icon: https://raw.githubusercontent.com/prometheus/prometheus.github.io/master/assets/prometheus_logo-cb55bb5c346.png
+kubeVersion: '>= 1.16.0-0'
+maintainers:
+- email: support@mavenir.com
+  name: mtcil team
+name: prometheus
+sources:
+- https://github.com/prometheus/alertmanager
+- https://github.com/prometheus/prometheus
+version: 11.6.0

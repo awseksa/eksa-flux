@@ -1,0 +1,50 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{ if .Values.global.mtcil.infra_deploy -}}
+{{ if .Values.container.config.ETCD_ENABLE_DEFRAG -}}
+{{- $cnfHdr := (dict "" "") }}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) }}
+apiVersion: {{ template "kubernetes.cronjob.apiVersion" . }}
+kind: CronJob
+metadata:
+  name: etcd-defrag-cronjob
+  labels:
+    app.kubernetes.io/name: {{ $cnfHdr.nfVariables.root.Chart.Name }}
+    app.kubernetes.io/instance: {{ $cnfHdr.nfVariables.root.Release.Name }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}  
+spec:
+  schedule: {{ .Values.container.config.ETCD_DEFRAG_INTERVAL | quote }}
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          containers:
+          - name: etcd
+            {{- if and (.Values.global) (.Values.global.hub) }}
+            image: {{ .Values.global.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+            {{- else }}
+            image: {{ .Values.container.image.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+            {{- end }}
+            tty: true
+            env:
+            - name: K8S_POD_ID
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: REPLICA
+              value: {{ .Values.container.replica_count | quote }} 
+            command:
+            - /bin/bash
+            - -c
+            - /bin/etcd_defrag.sh
+          restartPolicy: OnFailure
+          {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+          nodeSelector:
+            {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+          {{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

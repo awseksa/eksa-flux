@@ -1,0 +1,400 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.kruise) (.Values.global.mtcil.enableRBACprovisioning)) }}
+{{- if .Values.enabled -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "kruise.fullname" . }}-leader-election-role
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - configmaps/status
+  verbs:
+  - get
+  - update
+  - patch
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-leader-election-rolebinding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "kruise.fullname" . }}-leader-election-role
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: {{ template "kruise.fullname" . }}-manager-role1
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+rules:
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations", "validatingwebhookconfigurations"]
+  verbs: ["get", "list", "patch", "update", "watch"]
+- apiGroups: ["apiextensions.k8s.io"]
+  resources: ["customresourcedefinitions"]
+  verbs: ["get", "list", "patch", "update", "watch"]
+{{- /* Commented RBAC - FOR FUTURE USE
+- apiGroups: ["apps.kruise.io"]
+  resources: ["sidecarsets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["sidecarsets/status"]
+  verbs: ["get", "patch", "update"]
+*/}}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role1binding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "kruise.fullname" . }}-manager-role1
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role2
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+rules:
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "list", "watch", "create", "update", "delete", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role2binding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "kruise.fullname" . }}-manager-role2
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+{{- if and .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role4
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+rules:
+- apiGroups: ["apps"]
+  resources: ["controllerrevisions"]
+  verbs: ["list", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["list", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["list", "watch"]
+- apiGroups: [""]
+  resources: ["pods", "jobs", "persistentvolumeclaims"]
+  verbs: ["list", "watch"]
+{{- /* commented RBAC for future use
+*/}}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role4binding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ template "kruise.fullname" . }}-manager-role4
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+{{- end }}
+
+{{- if (not .Values.global.mtcil.scope.namespaced) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kruise-manager-role3
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+rules:
+- apiGroups: ["apps"]
+  resources: ["controllerrevisions"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["pods/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs/status"]
+  verbs: ["get", "patch", "update"]
+{{- /* commented RBAC for future use
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments","statefulsets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments/status","statefulsets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["replicasets/status"]
+  verbs: ["get"]
+*/}}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role3binding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kruise-manager-role3
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+{{- else if and .Values.global.mtcil.scope.namespaced  (not .Values.global.mtcil.scope.namespaceList) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role3
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+rules:
+- apiGroups: ["apps"]
+  resources: ["controllerrevisions"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["pods/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs/status"]
+  verbs: ["get", "patch", "update"]
+{{- /* commented RBAC for future use
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments","statefulsets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments/status","statefulsets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["replicasets/status"]
+  verbs: ["get"]
+*/}}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role3binding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ template "kruise.namespace" . }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "kruise.fullname" . }}-manager-role3
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+{{- else if and .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+{{- $globalScope := . }}
+{{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+{{- with $globalScope }}
+{{- if or .Values.global.mtcil.scope.enableNamespaceListRBAC ( eq (include "kruise.namespace" . | quote) ($namespace | quote) ) }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role3
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ $namespace }}
+rules:
+- apiGroups: ["apps"]
+  resources: ["controllerrevisions"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["persistentvolumeclaims"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: [""]
+  resources: ["pods/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["batch"]
+  resources: ["jobs"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["batch"]
+  resources: ["jobs/status"]
+  verbs: ["get", "patch", "update"]
+{{- /* commented RBAC for future use
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments","statefulsets"]
+  verbs: ["create", "delete", "get", "list", "patch", "update", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments/status","statefulsets/status"]
+  verbs: ["get", "patch", "update"]
+- apiGroups: ["apps"]
+  resources: ["replicasets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["replicasets/status"]
+  verbs: ["get"]
+*/}}
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ template "kruise.fullname" . }}-manager-role3binding
+  labels:
+    app.kubernetes.io/name: {{ template "kruise.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  namespace: {{ $namespace }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "kruise.fullname" . }}-manager-role3
+subjects:
+  - kind: ServiceAccount
+    name: kruise-default
+    namespace: {{ template "kruise.namespace" . }}
+---
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+{{- end }}

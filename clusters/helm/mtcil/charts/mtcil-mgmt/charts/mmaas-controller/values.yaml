@@ -1,0 +1,90 @@
+######## CNF TEMPLATE DEFINITIONS ###########
+nf:
+  version: "23.3.1"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1" #do not edit
+  nfClass: "mgmt"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: false
+      metaspec: {}
+    static_cfg: 
+      create: false
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: false
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+###########################################
+
+componentSpec:
+  deployment:
+    pod_metaspec:
+      labels:
+        app: mmaas-controller
+
+#########MMaaS-Controller##################
+
+mmaas_enabled: false
+
+
+promcmap_retrycount: 120
+mtcil_metric_storage: disable
+mtcil_scrape_level: nf
+mtcil_global_scrape_interval: 15s
+mtcil_remote_write: disable
+mutiple_remote_storage: disable
+prometheus_operator: enable
+mtcil_prometheus: disable
+prom_rule_selector: "app=kube-prometheus-stack,release=kube-prometheus-stack"
+pod_monitor_selector: "release=kube-prometheus-stack"
+scrape_namespace: "any"
+non_clock_aligned_port_names: "metrics"
+clock_aligned_port_names: "metrics"
+
+image:
+  repository: mmaas-controller
+  tag: 23.3.1
+resource:
+  request_memory: 100Mi
+  request_cpu: 100m
+  limit_memory: 200Mi
+  limit_cpu: 100m  
+
+podConfig:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "mmaas-controller"
+        topologyKey: kubernetes.io/hostname

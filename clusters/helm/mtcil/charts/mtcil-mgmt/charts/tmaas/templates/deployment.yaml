@@ -1,0 +1,286 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: apps/v1
+kind: Deployment
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix)) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" "") }}
+{{- end }}
+spec:
+  replicas: {{ .Values.componentSpec.deployment.replicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.componentSpec.deployment.pod_metaspec.labels.app }}
+  template:
+    {{- if .Values.app_name_prefix }}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- else }}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+    {{- end }}
+    spec:
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.mgmtNodeSelector) (.Values.global.mtcil.mgmtNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.mgmtNodeSelector.labelKey }}: {{ .Values.global.mtcil.mgmtNodeSelector.labelValue | quote }}
+      {{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+      serviceAccountName: mtcil-sa
+      initContainers:
+      - name: svc-discovery
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.tmaas.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        {{- else }}
+        image: {{ .Values.hub }}/{{ .Values.tmaas.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+         - name: ETCD_SVC_FQDN
+           value: {{ .Values.global.mtcil.etcd_svc_fqdn | default .Values.etcd_svc_fqdn | quote }}
+         - name: KAFKA_SVC_FQDN
+           value: {{ .Values.global.mtcil.kafka_svc_fqdn | default .Values.kafka_svc_fqdn | quote }}
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+        command: [ "/bin/bash", "-c", "svc-discovery.sh \"EVENT TMAAS\" " ]
+        resources:
+          limits:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.limits.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.requests.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.requests.memory }}
+      containers:
+      - name: tmaas
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.componentSpec.deployment.tmaas.image }}:{{ .Values.componentSpec.deployment.tmaas.tag }}
+        {{- else }}
+        image: {{ .Values.hub }}/{{ .Values.componentSpec.deployment.tmaas.image }}:{{ .Values.componentSpec.deployment.tmaas.tag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        command: ["/bin/bash","-c","/bin/start.sh"]
+        ports:
+          - containerPort: 8080
+          - containerPort: 8000
+            name: metrics
+        readinessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 8080
+          initialDelaySeconds: 180
+          periodSeconds: 10
+        env:
+         - name: K8S_POD_ID
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.name
+         - name: K8S_NAMESPACE
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.namespace
+         - name: JAVA_OPTIONS
+           value: {{ .Values.jvm_options | quote }}
+         - name: DN_PREFIX
+           value: {{ .Values.global.dnPrefix }}
+         - name: ZK_SVC_FQDN
+           value: {{ .Values.global.mtcil.zk_svc_fqdn | default .Values.zk_svc_fqdn | quote }}
+         - name: KAFKA_SVC_FQDN
+           value: {{ .Values.global.mtcil.kafka_svc_fqdn | default .Values.kafka_svc_fqdn | quote }}
+         - name: ETCD_SVC_FQDN
+           value: {{ .Values.global.mtcil.etcd_svc_fqdn | default .Values.etcd_svc_fqdn | quote }}
+         - name: ALL_ACTIVE_FORCEFUL
+           value: "true"
+         {{- if and .Values.global.mtcil.authManagement.enableAutoInjection (eq (.Values.global.mtcil.authManagement.type | toString) "ocp") }}
+         - name: SECRET_NAME
+           value: "topo-engine"
+         {{- else }}
+         - name: SECRET_NAME
+           value: {{ .Values.global.mtcil.authManagement.secretName | quote }}
+         {{- end }}
+         - name: PRIVATE_KEY
+           value: {{ .Values.global.mtcil.authManagement.serverKey | quote }}
+         - name: CERTIFICATE
+           value: {{ .Values.global.mtcil.authManagement.serverCertificate | quote }}
+         - name: MUTATOR
+           value: {{ .Values.global.mtcil.authManagement.enableSecretDiscovery | quote }}
+         - name: POLL_FREQUENCY
+           value: {{ .Values.pollFrequency | quote }}
+         - name: RESYNC_PERIOD
+           value: {{ .Values.resyncPeriod | quote }}
+         - name: ENABLE_WEBHOOK_CREATION
+           value: {{ .Values.componentSpec.deployment.tmaas.enableWebhookCreation | quote }}
+         - name: ENABLE_OPEN_API_SCHEMA_VALIDATION
+           value: "true"
+         - name: GRACE_PERIOD
+           value: "10"
+         - name: MAX_WAIT_BEFORE_SCALE_PERIOD
+           value: "5"
+         - name: K8S_SVC_FQDN
+           value: {{ .Values.global.mtcil.k8s_svc_fqdn | default .Values.k8s_svc_fqdn | quote }}
+         - name: KAFKA_MAX_POLL
+           value: {{ .Values.kafka_max_poll | quote }}
+         - name: NF_UPGRADE_CHECK_ENABLED
+           value: {{ .Values.nfUpgradeCheckEnabled | quote }}
+         - name: NF_UPGRADE_TIMEOUT
+           value: {{ .Values.nfUpgradeTimeout | quote }}
+         - name: CONFIG_MODE
+           value: {{ .Values.global.mtcil.config_mode | quote }}
+         - name: METRICS_BASIC_LEVEL
+           value: {{ .Values.metricsBasicLevel | quote }}
+         - name: LEADER_TASK_DELAY_MS
+           value: "120000"
+         - name: KAFKA_RECONNECT_COUNT
+           value: {{ .Values.kafkaReconnectCount | quote }}
+         - name: IS_NAMESPACED
+           value: {{ .Values.global.mtcil.scope.namespaced | quote }}
+         - name: LOGGING_STDOUT_LOCAL
+           value: {{ .Values.global.mtcil.logging_stdout_local | quote }}           
+         - name: EVENT_LABELS
+           value: {{ .Values.global.mtcil.k8s_nf_labels | quote }}
+         - name: EVENT_LABEL_TMAAS_PREFIX
+           value: {{ .Values.global.mtcil.event_label_tmaas_prefix | quote }}
+         - name: EVENT_LABELS_TO_BE_PREFIXED
+           value: {{ .Values.global.mtcil.event_labels_to_be_prefixed | quote }}
+         - name: EVENT_LABELS_TO_BE_EXCLUDED_NF
+           value: {{ .Values.global.mtcil.event_labels_to_be_excluded_nf | quote }}
+         - name: EVENT_LABELS_TO_BE_EXCLUDED_NFS
+           value: {{ .Values.global.mtcil.event_labels_to_be_excluded_nfs | quote }}
+         - name: LABEL_MTCILID_SEARCH_DISABLED
+           value: {{ .Values.global.mtcil.label_mtcilid_search_disabled | quote }}
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+         - name: LOGGING_STDOUT_JSON
+           value: {{ if eq .Values.global.mtcil.log_format "unified-json" }}"true"{{ else }}"false"{{ end }}
+        resources:
+          limits:
+            cpu: {{ .Values.componentSpec.deployment.tmaas.resource.limit_cpu }}
+            memory: {{ .Values.componentSpec.deployment.tmaas.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.componentSpec.deployment.tmaas.resource.request_cpu }}
+            memory: {{ .Values.componentSpec.deployment.tmaas.resource.request_memory }}
+        volumeMounts:
+        {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+        - mountPath: {{ .Values.componentSpec.deployment.cim.mount.container_path }}
+          name: mnt-oam-sidecar
+        {{- end }}
+        - mountPath: /config
+          name: tmaas-mgmt-cfg
+        - mountPath: /opt/conf/static/
+          name: static-config
+      - name: cim
+       {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.componentSpec.deployment.cim.image }}:{{ .Values.global.mtcil.cim.imageTag }}
+        {{- else }}
+        image: {{ .Values.hub }}/{{ .Values.componentSpec.deployment.cim.image }}:{{ .Values.global.mtcil.cim.imageTag }}
+        {{- end }}
+        imagePullPolicy:  {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        ports:
+          - containerPort: 6060
+        readinessProbe:
+          tcpSocket:
+            port: 6060
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 6060
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        env:
+         - name: MICROSERVICE_NAME
+           value: {{ $cnfHdr.nfVariables.component_name }}
+         - name: NF_PREFIX
+           value: {{ $cnfHdr.nfVariables.nfPrefix }}
+         - name: NF_TYPE
+           value: {{ $cnfHdr.nfVariables.nfType }}
+         - name: NF
+           value: {{ $cnfHdr.nfVariables.nfName }}
+         - name: ENABLE_KPI
+           value: "false"
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+         - name: K8S_POD_ID
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.name
+         - name: MS_CONFIG_REVISION
+           valueFrom:
+            configMapKeyRef:
+              name: {{ $cnfHdr.nfVariables.component_name }}-mgmt-cfg
+              key: revision
+         - name: K8S_NAMESPACE
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.namespace
+        command: ["/bin/bash","-c","NatsSubFb"]
+        resources:
+          limits:
+            cpu: {{ .Values.componentSpec.deployment.cim.resource.limit_cpu }}
+            memory: {{ .Values.componentSpec.deployment.cim.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.componentSpec.deployment.cim.resource.request_cpu }}
+            memory: {{ .Values.componentSpec.deployment.cim.resource.request_memory }}
+        volumeMounts:
+        {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+        - mountPath: {{ .Values.componentSpec.deployment.cim.mount.container_path }}
+          name: mnt-oam-sidecar
+        {{- end }}
+        - mountPath: /opt/conf/
+          name: cim-config
+        - mountPath: /opt/conf/static/
+          name: static-config
+      volumes:
+      {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+      - name: mnt-oam-sidecar
+        hostPath:
+          path: {{ .Values.global.mtcil.cim.host_path }}
+          type: {{ .Values.global.mtcil.cim.mount_type }}
+      {{- end }}
+      - configMap:
+          items:
+            - key: cim.json
+              path: cim.json
+          name: {{ $cnfHdr.nfVariables.component_name }}-mgmt-cfg
+        name: cim-config
+      - configMap:
+          items:
+            - key: common-infra.json
+              path: common-infra.json
+            - key: api-specification.json
+              path: api-specification.json
+          name: {{ $cnfHdr.nfVariables.component_name }}-static-cfg
+        name: static-config
+      - configMap:
+          items:
+          - key: tmaas.json
+            path: tmaas.json
+          name: {{ $cnfHdr.nfVariables.component_name }}-mgmt-cfg
+        name: tmaas-mgmt-cfg
+{{- end }}

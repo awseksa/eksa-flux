@@ -1,0 +1,355 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.limaasEnabled) -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: apps/v1
+kind: Deployment
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+{{- end }}
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Values.common.app_name }}
+  replicas: {{ .Values.replica_count }}
+  template:
+    {{- if .Values.app_name_prefix }}
+    {{- if (hasKey .Values.componentSpec.deployment.pod_metaspec.annotations "robin.io/networks") -}}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" (omit .Values.componentSpec.deployment.pod_metaspec "k8s.v1.cni.cncf.io/networks")) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- else -}}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- end -}}
+    {{- else }}
+    {{- if (hasKey .Values.componentSpec.deployment.pod_metaspec.annotations "robin.io/networks") -}}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" (omit .Values.componentSpec.deployment.pod_metaspec "k8s.v1.cni.cncf.io/networks")) }}
+    {{- else -}}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+    {{- end -}}
+    {{- end }}
+    spec:
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.mgmtNodeSelector) (.Values.global.mtcil.mgmtNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.mgmtNodeSelector.labelKey }}: {{ .Values.global.mtcil.mgmtNodeSelector.labelValue | quote }}
+      {{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+      serviceAccountName: mtcil-sa
+      volumes:
+      {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+      - name: mnt-oam-sidecar
+        hostPath:
+          path: {{ .Values.global.mtcil.cim.host_path }}
+          type: {{ .Values.global.mtcil.cim.mount_type }}
+      {{- end }}
+      - configMap:
+          items:
+            - key: cim.json
+              path: cim.json
+          name: {{ $cnfHdr.nfVariables.component_name }}-mgmt-cfg
+        name: cim-config
+      - configMap:
+          items:
+            - key: common-infra.json
+              path: common-infra.json
+          name: {{ $cnfHdr.nfVariables.component_name }}-static-cfg
+        name: static-config
+      - configMap:
+          items:
+            - key: limaasAdminDay0.json
+              path: limaasAdminDay0.json
+            - key: limaasGeneral.json
+              path: limaasGeneral.json
+            - key: limaasDynamicRoutes.json
+              path: limaasDynamicRoutes.json
+            - key: limaasAdminDay1.json
+              path: limaasAdminDay1.json
+          name: {{ $cnfHdr.nfVariables.component_name }}-mgmt-cfg
+        name: limaas-config
+      - name: li-manager-secret-volume
+        secret:
+          defaultMode: 0777
+          secretName: li-manager
+      containers:
+      - name: {{ .Values.common.app_name }}
+        {{- if .Values.global.hub }}
+        image: {{ .Values.global.hub }}/{{ .Values.li_manager.image.repository }}:{{ .Values.li_manager.image.tag }}
+        {{- else }}
+        image: {{ .Values.li_manager.image.hub }}/{{ .Values.li_manager.image.repository }}:{{ .Values.li_manager.image.tag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.li_manager.containerConfig }}
+{{ toYaml .Values.li_manager.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        ports:
+        - containerPort: 4430
+          name: https
+        - containerPort: 9090
+          name: http
+        - containerPort: 9090
+          name: metrics
+        - containerPort: 9091
+          name: httpcim
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 9090
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 9090
+          initialDelaySeconds: 80
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: {{ .Values.li_manager.resource.limit_cpu }}
+            memory: {{ .Values.li_manager.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.li_manager.resource.request_cpu }}
+            memory: {{ .Values.li_manager.resource.request_memory }}
+        env:
+         - name: UDSF_ADDRESS
+           value: {{ .Values.udsf_add }}
+         - name: ENCRYPTION_ENABLED
+           value: {{ .Values.encrypt_enabled | quote }}
+         - name: CLIENT_TLS_MIN_VERSION
+           {{- if hasKey .Values.global.mtcil "cli_tls_min_ver" }}
+           value: {{ .Values.global.mtcil.cli_tls_min_ver | quote }}
+           {{- else }}
+           value: {{ .Values.cli_tls_min_ver | quote }}
+           {{- end }}
+         - name: CLIENT_TLS_MAX_VERSION
+           {{- if hasKey .Values.global.mtcil "cli_tls_max_ver" }}
+           value: {{ .Values.global.mtcil.cli_tls_max_ver | quote }}
+           {{- else }}
+           value: {{ .Values.cli_tls_max_ver | quote }}
+           {{- end }}
+         - name: SERVER_TLS_MIN_VERSION
+           {{- if hasKey .Values.global.mtcil "server_tls_min_ver" }}
+           value: {{ .Values.global.mtcil.server_tls_min_ver | quote }}
+           {{- else }}
+           value: {{ .Values.server_tls_min_ver | quote }}
+           {{- end }}
+         - name: SERVER_TLS_MAX_VERSION
+           {{- if hasKey .Values.global.mtcil "server_tls_max_ver" }}
+           value: {{ .Values.global.mtcil.server_tls_max_ver | quote }}
+           {{- else }}
+           value: {{ .Values.server_tls_max_ver | quote }}
+           {{- end }}          
+         - name: MAX_XID_PER_GR
+           value: {{ .Values.max_xid_per_gr | quote }}
+         - name: LOGGING_STDOUT_LOCAL
+           value: {{ .Values.global.mtcil.logging_stdout_local | quote }}
+         - name: JSON_LOG_FORMAT
+           value: {{ .Values.global.mtcil.log_format | quote }}
+         - name: DEFAULT_DESTINATIONS_REQD
+           value: {{ .Values.default_destinations_reqd | quote }}
+         - name: X1_1_ENCRYPTION_ENABLED
+           {{- if hasKey .Values.global.mtcil "x1_1_encrypt_enabled" }}
+           value: {{ .Values.global.mtcil.x1_1_encrypt_enabled | quote }}
+           {{- else }}
+           value: {{ .Values.x1_1_encrypt_enabled | quote }}
+           {{- end }}
+         - name: K8S_LI_NAMESPACE
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.namespace
+         - name: POD_IP
+           valueFrom:
+             fieldRef:
+               fieldPath: status.podIP
+         - name: OPERATOR_NAME
+           {{- if hasKey .Values.global.mtcil "operator_name" }}
+           value: {{ .Values.global.mtcil.operator_name | quote }}
+           {{- else if hasKey .Values "operator_name" }}
+           value: {{ .Values.operator_name | quote }}
+           {{- else }}
+           value: "OPERATOR"
+           {{- end }}
+         - name: PRODUCT_NAME
+           {{- if hasKey .Values.global.mtcil "product_name" }}
+           value: {{ .Values.global.mtcil.product_name | quote }}
+           {{- else if hasKey .Values "product_name" }}
+           value: {{ .Values.product_name | quote }}
+           {{- else }}
+           value: "5GC"
+           {{- end }}
+         - name: UPF_CA_CERT_NAME
+           {{- if hasKey .Values.global.mtcil "upf_ca_cert_name" }}
+           value: {{ .Values.global.mtcil.upf_ca_cert_name | quote }}
+           {{- else if hasKey .Values "upf_ca_cert_name" }}
+           value: {{ .Values.upf_ca_cert_name | quote }}
+           {{- else }}
+           value: "ca-cert.pem"
+           {{- end }}
+         - name: UPF_SERVER_NAME
+           {{- if hasKey .Values.global.mtcil "upf_server_name" }}
+           value: {{ .Values.global.mtcil.upf_server_name | quote }}
+           {{- else if hasKey .Values "upf_server_name" }}
+           value: {{ .Values.upf_server_name | quote }}
+           {{- else }}
+           value: "upf"
+           {{- end }}
+         - name: ADMF_SERVER_NAME
+           {{- if hasKey .Values.global.mtcil "admf_server_name" }}
+           value: {{ .Values.global.mtcil.admf_server_name | quote }}
+           {{- else if hasKey .Values "admf_server_name" }}
+           value: {{ .Values.admf_server_name | quote }}
+           {{- else }}
+           value: "admf"
+           {{- end }}
+         - name: REST_JSON_TYPE
+           {{- if hasKey .Values.global.mtcil "rest_json_type" }}
+           value: {{ .Values.global.mtcil.rest_json_type | quote }}
+           {{- else if hasKey .Values "rest_json_type" }}
+           value: {{ .Values.rest_json_type | quote }}
+           {{- end }}
+         - name: LIST_OF_NFS
+           value: {{ .Values.list_of_nfs | quote }}
+         - name: MTLS_ENABLED
+           {{- if hasKey .Values.global.mtcil "mtls_enabled" }}
+           value: {{ .Values.global.mtcil.mtls_enabled | quote }}
+           {{- else }}
+           value: {{ .Values.mtls_enabled | quote }}
+           {{- end }}
+         - name: NEID_DEST_DIRTY
+           {{- if hasKey .Values.global.nf "nfId" }}
+           value: {{ .Values.global.nf.nfId | quote }}
+           {{- else }}
+           value: "mtcil1"
+           {{- end }}
+         {{- if hasKey .Values "aws_region" }}
+         - name: AWS_REGION
+           value: {{ .Values.aws_region | quote }}
+         {{- end }}
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+         - name: K8S_NAMESPACE
+           valueFrom:
+             fieldRef:
+               fieldPath: metadata.namespace
+        volumeMounts:
+        - mountPath: /opt/secret/
+          name: li-manager-secret-volume
+        - mountPath: /opt/config/
+          name: limaas-config
+      - name: cim
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.cim.container.image.repository }}:{{ .Values.global.mtcil.cim.imageTag }}
+        {{- else }}
+        image: {{ .Values.hub }}/{{ .Values.cim.container.image.repository }}:{{ .Values.global.mtcil.cim.imageTag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        ports:
+          - containerPort: 6060
+            name: http
+          - containerPort: 6061
+            name: httpext
+        readinessProbe:
+          tcpSocket:
+            port: 6061
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        livenessProbe:
+          tcpSocket:
+            port: 6061
+          initialDelaySeconds: 20
+          periodSeconds: 10
+        env:
+         - name: MICROSERVICE_NAME
+           value: {{ $cnfHdr.nfVariables.component_name }}
+         - name: NF_PREFIX
+           value: {{ $cnfHdr.nfVariables.nfPrefix }}
+         - name: NF_TYPE
+           value: {{ $cnfHdr.nfVariables.nfType }}
+         - name: NF
+           value: {{ $cnfHdr.nfVariables.nfName }}
+         - name: ENABLE_KPI
+           value: "false"
+         - name: USER_TOKEN
+           value: "mavenir123"
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+         - name: K8S_POD_ID
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.name
+         - name: CIM_EXT_PORT
+           value: "6061"
+         - name: POD_IP
+           valueFrom:
+             fieldRef:
+               fieldPath: status.podIP
+         - name: MS_CONFIG_REVISION
+           valueFrom:
+            configMapKeyRef:
+              name: {{ $cnfHdr.nfVariables.component_name }}-mgmt-cfg
+              key: revision
+         - name: K8S_NAMESPACE
+           valueFrom:
+            fieldRef:
+             fieldPath: metadata.namespace
+        command: ["/bin/bash","-c","NatsSubFb"]
+        resources:
+          limits:
+            cpu: {{ .Values.cim.container.resource.limit_cpu }}
+            memory: {{ .Values.cim.container.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.cim.container.resource.request_cpu }}
+            memory: {{ .Values.cim.container.resource.request_memory }}
+        volumeMounts:
+        {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+        - mountPath: {{ .Values.cim.container.mount.container_path }}
+          name: mnt-oam-sidecar
+        {{- end }}
+        - mountPath: /opt/conf/
+          name: cim-config
+        - mountPath: /opt/conf/static/
+          name: static-config
+      initContainers:
+      - name: svc-discovery
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.li_manager.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        {{- else }}
+        image: {{ .Values.hub }}/{{ .Values.li_manager.init_container.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+         - name: ETCD_SVC_FQDN
+           value: {{ .Values.global.mtcil.etcd_svc_fqdn | default .Values.etcd_svc_fqdn | quote }}
+         - name: KAFKA_SVC_FQDN
+           value: {{ .Values.global.mtcil.kafka_svc_fqdn | default .Values.kafka_svc_fqdn | quote }}
+         - name: TZ
+           value: {{ .Values.global.timezone | quote }}
+        command: [ "/bin/bash", "-c", "svc-discovery.sh \"EVENT\" " ] 
+        resources:
+          limits:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.limits.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.requests.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.requests.memory }}         
+{{- end -}}
+{{- end }}

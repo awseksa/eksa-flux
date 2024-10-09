@@ -1,0 +1,33 @@
+module mavenir-mtcil-limaas-manager-general-config {
+    namespace "urn:mavenir:ns:yang:cnp:mtcil:limaas-manager-general-23.3.1-20231215";
+    prefix mtcil-limaas-manager-general;
+    import tailf-common { prefix tailf; }
+    revision "2020-09-07" {
+        description "Added limaas manager general config parameters";
+    }
+    container config {
+        tailf:callpoint configUpdate {
+            tailf:transaction-hook subtree;
+        }
+        container li_interface {
+            leaf show_exec_retries {
+                type int32 {
+                   range "1 .. 60";
+                }
+                default 10;
+            }
+            leaf log_level {
+                type enumeration {
+                    enum INFO;
+                    enum DEBUG;
+                    enum ERROR;
+                    enum WARNING;
+                    enum EXCEPTION;
+                    enum ALL;
+                }
+                default "ERROR";
+                description "Defines the Log Level for LI Manager Service";
+            } 
+        }
+    } /*limaas_general_config */
+} /*mavenir-mtcil-limaas */

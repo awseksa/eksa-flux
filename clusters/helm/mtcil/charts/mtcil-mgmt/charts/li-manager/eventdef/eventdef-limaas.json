@@ -1,0 +1,83 @@
+{
+    "events": {
+        "ADMFDigitalCertificateExpiry": {
+            "eventType": "LI_DIGI_CERT_EXPIRY",
+            "perceivedSeverity": "WARNING",
+            "probableCause": "X.509 Digital Certificate between li-message handler and ADMF about to Expire",
+            "specificProblem": "X.509 Digital Certificate between li-message handler and ADMF about to Expire",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "DigitalCertificateExpiry",
+            "additionalText": "The precondition is: the LI Message Handler is configured with ID of ADMF. And the service impact will be: If the X.509 digital certificate is not rotated on time, then it can result in broken TLS connection between LI Message Handler and ADMF",
+            "proposedRepairAction": "Update the Digital Certificate"
+        },
+        "ADMFUnreachable": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "MAJOR",
+            "probableCause": "ADMF is unreachable from NF",
+            "specificProblem": "NO LI_X1 transaction between ADMF and NF",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "",
+            "domain": "fault"
+        },
+        "ADMFReachable": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "CLEAR",
+            "probableCause": "ADMF is reachable from NF",
+            "specificProblem": "Activity over LI_X1 is seen, from ADMF to NF",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "ADMFUnreachable",
+            "additionalText": "",
+            "proposedRepairAction": "",
+            "domain": "fault"
+        },
+        "CNFDigitalCertificateExpiry": {
+            "eventType": "LI_DIGI_CERT_EXPIRY",
+            "perceivedSeverity": "WARNING",
+            "probableCause": "X.509 Digital Certificate between li-message handler and CNF about to Expire",
+            "specificProblem": "X.509 Digital Certificate is about to Expire",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "DigitalCertificateExpiry",
+            "additionalText": "The precondition is: the LI Message Handler is configured with ID of <name of 5G CNF|4G control plane component>. And the service impact will be: If the X.509 digital certificate is not rotated on time, then it can result in broken TLS connection between LI Message Handler and <name of 5G CNF | 4G control plane component>",
+            "proposedRepairAction": "Update the Digital Certificate"
+        },
+        "Configured": {
+            "eventType": "CONFIGURATION",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Full configuration available for application to be ready",
+            "specificProblem": "Application is configured.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "No specific action required."
+        },
+        "NotConfigured": {
+            "eventType": "CONFIGURATION",
+            "perceivedSeverity": "INFO",
+            "probableCause": "Full configuration unavailable for application to be ready",
+            "specificProblem": "Application is not configured.",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "",
+            "proposedRepairAction": "Push Day-1 configuration"
+        },
+        "TerminatingFaultXID": {
+            "eventType": "LI_COMMUNICATION",
+            "perceivedSeverity": "INFO",
+            "probableCause": "CNF is overloaded, MDF2 / MDF3 destination(s) is/are overloaded, Network error, LI_X2 Proxy service or UPF is overloaded, Multiple parallel active LI Tasks on that CNF",
+            "specificProblem": "The terminating fault occurs for active LI task",
+            "rootCauseIndicator": "",
+            "trendIndication": "",
+            "correlatedNotifications": "",
+            "additionalText": "The preconditions are: the LI Task with that XID value shall be activated by ADMF and the UPF The CNF shall have active connection with LI Message handler. It can impact lawful interception for activated LI task",
+            "proposedRepairAction": ""
+        }
+    }
+}

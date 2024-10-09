@@ -1,0 +1,90 @@
+nf:
+  version: "v1.7.0"
+  vendorId: "mvnr"
+  mtcilId: "mtcil1" #do not edit
+  nfClass: "infra"
+  nfType: "mtcil"
+  nfId: "mtcil1"
+
+  cnftpl_configmap:
+    mgmt_cfg:
+      create: false
+      metaspec:
+        annotations:
+          configMgmt: enabled
+    static_cfg:
+      create: false
+      metaspec: {}
+    env_cfg:
+      create: false
+      metaspec: {}
+  cnftpl_secret:
+      create: false
+      metaspec: {}
+      secretspec: {}
+  cnftpl_namespaces:
+      create: false
+      metaspec: {}
+  cnftpl_dashboard:
+      create: false
+      metaspec: {}
+  cnftpl_eventdef:
+      create: false
+      metaspec: {}
+  cnftpl_alertsdef:
+      create: false
+      metaspec: {}
+  cnftpl_metricsdef:
+      create: false
+      metaspec: {}
+
+app_name_prefix: ""
+
+componentSpec:
+  deployment:
+    pod_metaspec:
+      labels:
+        app: kafka-exporter
+      annotations:
+        prometheus.io/path: /metrics
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9308"
+
+common:
+  app_name: kafka-exporter
+  svc_app_name: svc-discovery
+
+
+initContainers:
+  image:
+    repository: mtcil-svc-init
+
+container:
+  replica_count: 1
+  image:
+    hub: 10.1.34.114:5000
+    repository: kafka-exporter
+    tag: v1.7.0
+  resource:
+    limit_memory: 50Mi
+    limit_cpu: 50m
+    requests_memory: 50Mi
+    requests_cpu: 50m
+  ports:  
+    client: 9308 
+
+podConfig:
+
+affinity:
+  nodeAffinity: {}
+  podAntiAffinity:
+    preferredDuringSchedulingIgnoredDuringExecution:
+    - weight: 100
+      podAffinityTerm:
+        labelSelector:
+          matchExpressions:
+          - key: component
+            operator: In
+            values:
+            - "kafka-exporter"
+        topologyKey: kubernetes.io/hostname

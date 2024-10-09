@@ -1,0 +1,19 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.traefik) (.Values.global.mtcil.enableServiceprovisioning)) }}
+{{- if .Values.enabled -}}
+{{- range $name, $config := .Values.tlsOptions }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: TLSOption
+metadata:
+  name: {{ $name }}
+  namespace: {{ template "traefik.namespace" $ }}
+  labels:
+    app.kubernetes.io/name: {{ template "traefik.name" $ }}
+    helm.sh/chart: {{ template "traefik.chart" $ }}
+    app.kubernetes.io/managed-by: {{ $.Release.Service }}
+    app.kubernetes.io/instance: {{ $.Release.Name }}
+spec:
+  {{- toYaml $config | nindent 2 }}
+---
+{{- end -}}
+{{- end }}
+{{- end }}

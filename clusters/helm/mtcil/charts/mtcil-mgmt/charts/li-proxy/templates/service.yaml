@@ -1,0 +1,21 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.limaasEnabled) -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Service
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.service.metaspec) }}
+spec:
+  selector:
+    app: li-proxy
+  ports:
+    - port: 9090
+      targetPort: 9090
+{{- if .Values.global.mtcil.ingress.enableLB }}
+      nodePort: 0
+{{- end }}
+      protocol: TCP
+      name: http
+  type: {{ printf "%s" ( ternary "ClusterIP" "NodePort" .Values.global.mtcil.ingress.enableLB ) }}
+{{- end -}}
+{{- end }}

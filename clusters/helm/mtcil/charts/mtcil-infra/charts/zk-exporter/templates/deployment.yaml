@@ -1,0 +1,110 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.optionalDeployment.metricsExporter }}
+{{- if .Values.global.mtcil.infra_deploy -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: apps/v1
+kind: Deployment
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix)) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" "") }}
+{{- end }}
+spec:
+  replicas: {{ .Values.container.replica_count }}
+  selector:
+    matchLabels:
+      app: {{ .Values.common.app_name }}
+  template:
+    {{- if .Values.app_name_prefix }}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- else }}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+    {{- end }}
+    spec:
+      {{- if .Values.global.mtcil.use_release_ns }}
+      serviceAccountName: mtcil-sa
+      {{- end }}
+      initContainers:
+      - name: {{ .Values.common.svc_app_name }}
+        image: {{ .Values.global.hub }}/{{ .Values.initContainers.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+        - name: ZK_SVC_FQDN
+          value: {{ .Values.global.mtcil.zk_svc_fqdn | default .Values.zk_svc_fqdn | quote }}
+        - name: service
+          value: "kafka"
+        - name: TZ
+          value: {{ .Values.global.timezone | quote }}
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          {{- if .Values.app_name_prefix }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "nameprefix" (.Values.zk_app_name_prefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- else }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- end }}
+        command: [ "/bin/bash", "-c", "svc-discovery.sh" ]
+        resources:
+          limits:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.limits.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.requests.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.requests.memory }}
+      containers:
+      - name: {{ .Values.common.app_name }}
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+        {{- else }}
+        image: {{ .Values.container.image.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+        - name: K8S_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: TZ
+          value: {{ .Values.global.timezone | quote }}
+        - name: ZK_CLIENTS
+          {{- if .Values.app_name_prefix }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "nameprefix" (.Values.zk_app_name_prefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- else }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- end }}
+        args:
+          - --zk-hosts=$(ZK_CLIENTS)
+        resources:
+          limits:
+            cpu: {{ .Values.container.resource.limit_cpu }}
+            memory: {{ .Values.container.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.container.resource.requests_cpu }}
+            memory: {{ .Values.container.resource.requests_memory }}
+        ports:
+        - containerPort: {{ .Values.container.ports.client }}
+          name: metrics
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+{{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+{{- end }}
+{{- end }}

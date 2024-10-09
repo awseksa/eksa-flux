@@ -1,0 +1,184 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.global.mtcil.infra_deploy -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+{{- if and (.Values.volume.storageClassName) ( .Values.global.mtcil.storage.isProviderMTCIL) }}
+{{- fail "Microservice Level StorageClass provisioning is not possible when mtcil provided local storageClass is enabled. Kindly Use local storage for all stateful pv or use cloud storage to override pv provision at microservice level." }} 
+{{- end }}
+apiVersion: apps/v1
+kind: StatefulSet
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix)) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" "") }}
+{{- end }}
+spec:
+  serviceName: {{ .Values.common.app_name }}-svc
+  replicas: {{ .Values.container.replica_count }}
+  selector:
+    matchLabels:
+      app: {{ .Values.common.app_name }}
+  template:
+    {{- if .Values.app_name_prefix }}
+    {{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" .Values.app_name_prefix))) }}
+    {{- else }}
+    {{- include "cnfTplMetadata_2_27" (dict "setOffset" "4" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+    {{- end }}
+    spec:
+      {{- if .Values.global.mtcil.use_release_ns }}
+      serviceAccountName: mtcil-sa
+      automountServiceAccountToken: false
+      {{- end }}
+      initContainers:
+      - name: {{ .Values.common.svc_app_name }}
+        image: {{ .Values.global.hub }}/{{ .Values.initContainers.image.repository }}:{{ .Values.global.mtcil.svcInit.imageTag }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        env:
+        - name: ZK_SVC_FQDN
+          value: {{ (print "zk."  $cnfHdr.nfVariables.nfPrefix  ".svc." .Values.global.mtcil.clusterDomain) | quote }}
+        - name: service
+          value: {{ .Values.common.app_name }}
+        - name: TZ
+          value: {{ .Values.global.timezone | quote }}
+        - name: KAFKA_ZOOKEEPER_CONNECT
+         {{- if .Values.app_name_prefix }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "nameprefix" (.Values.zk_app_name_prefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- else }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- end }}
+        command: [ "/bin/bash", "-c", "svc-discovery.sh" ]
+        resources:
+          limits:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.limits.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.limits.memory }}
+          requests:
+            cpu: {{ .Values.global.mtcil.svcInit.resources.requests.cpu }}
+            memory: {{ .Values.global.mtcil.svcInit.resources.requests.memory }}
+      containers:
+      - name: {{ .Values.common.app_name }}
+        {{- if and (.Values.global) (.Values.global.hub) }}
+        image: {{ .Values.global.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+        {{- else }}
+        image: {{ .Values.container.image.hub }}/{{ .Values.container.image.repository }}:{{ .Values.container.image.tag }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 8 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 8 }}
+{{- end }}
+        lifecycle:
+          preStop:
+            exec:
+              command:
+              - /bin/bash
+              - -c
+              - echo 'preStop_executed start time:' > /proc/1/fd/1;date > /proc/1/fd/1;sleep 30;echo 'preStop_executed end time:' > /proc/1/fd/1;date > /proc/1/fd/1;sleep 1
+        env:
+        - name: K8S_POD_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: HOSTNAME_COMMAND
+          value: {{ .Values.container.config.HOSTNAME_COMMAND | quote }}
+        - name: BROKER_ID_COMMAND
+          value: {{ .Values.container.config.BROKER_ID_COMMAND | quote }}
+        - name: KAFKA_ZOOKEEPER_CONNECT
+          {{- if .Values.app_name_prefix }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "nameprefix" (.Values.zk_app_name_prefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- else }}
+          value: {{ include "kafkazkconnectendpoints" (dict "count" (int .Values.container.zk_endpoint_count) "namespace" ($cnfHdr.nfVariables.nfPrefix) "domain" (.Values.global.mtcil.clusterDomain)) | quote }}
+          {{- end }}
+        - name: KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS 
+          value: {{ .Values.container.config.KAFKA_ZOOKEEPER_CONNECTION_TIMEOUT_MS | quote }}
+        - name: KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS
+          value: {{ .Values.container.config.KAFKA_ZOOKEEPER_SESSION_TIMEOUT_MS | quote }}
+        - name: KAFKA_LISTENERS
+          value: {{ .Values.container.config.KAFKA_LISTENERS | quote }}
+        - name: KAFKA_ADVERTISED_LISTENERS
+          value: {{ (print "PLAINTEXT://_{HOSTNAME_COMMAND}.kafka-svc." $cnfHdr.nfVariables.nfPrefix ".svc." .Values.global.mtcil.clusterDomain ":9092") | quote }}
+        - name: KAFKA_HEAP_OPTS
+          value: {{ .Values.container.config.KAFKA_HEAP_OPTS | quote }}
+        - name: KAFKA_LOG_SEGMENT_BYTES
+          value: {{ .Values.container.config.KAFKA_LOG_SEGMENT_BYTES | quote }}
+        - name: KAFKA_CREATE_TOPICS
+          value: {{ .Values.container.config.KAFKA_CREATE_TOPICS | quote }}
+        - name: TZ
+          value: {{ .Values.global.timezone | quote }}
+        - name: REPLICA
+          value: {{ .Values.container.replica_count | quote }}
+        readinessProbe:
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+          tcpSocket:
+            port: 9092
+        livenessProbe:
+          initialDelaySeconds: 90
+          periodSeconds: 30
+          timeoutSeconds: 10
+          tcpSocket:
+            port: 9092
+        resources:
+          limits:
+            cpu: {{ .Values.container.resource.limit_cpu }}
+            memory: {{ .Values.container.resource.limit_memory }}
+          requests:
+            cpu: {{ .Values.container.resource.requests_cpu }}
+            memory: {{ .Values.container.resource.requests_memory }}
+        ports:
+        - containerPort: {{ .Values.container.ports.broker }}
+{{- if .Values.volume.pvenabled }}
+        volumeMounts:
+        - name: kafka-vol
+          mountPath: /kafka
+{{- end }}
+      terminationGracePeriodSeconds: 60
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+{{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+
+{{- if .Values.volume.pvenabled }}
+  volumeClaimTemplates:
+  - metadata:
+      name: kafka-vol
+{{- if  .Values.volumeClaimMetadata }}
+{{ toYaml .Values.volumeClaimMetadata | indent 6 }}
+{{- else if .Values.global.mtcil.volumeClaimMetadata }}
+{{ toYaml .Values.global.mtcil.volumeClaimMetadata | indent 6 }}
+{{- end }}
+    spec:
+      accessModes: [ {{ .Values.volume.accessModes }} ]
+      {{- if .Values.volume.storageClassName }}
+      storageClassName: {{ .Values.volume.storageClassName }}
+      {{- else }}
+      storageClassName: {{ .Values.global.mtcil.storage.storageClass }}
+      {{- end }}
+      resources:
+        requests:
+          storage: {{ .Values.volume.storageClaim }}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.storage) (not .Values.volume.storageClassName) (.Values.global.mtcil.storage.isProviderMTCIL) }}
+      selector:
+        matchLabels:
+          kafka-vol: "true"
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

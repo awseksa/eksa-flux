@@ -1,0 +1,52 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: ConfigMap
+{{- if .Values.app_name_prefix }}
+{{- include "cnfTplMetadata_2_27" (merge (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" $.Chart.Name)) (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec)) }}
+{{- else }}
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" .Values.componentSpec.deployment.pod_metaspec) }}
+{{- end }}
+data:
+  ves-agent.yml: |
+    datadir: {{.Values.data.datadir}}
+    KafkaAddress: {{ .Values.global.mtcil.kafka_svc_fqdn | default .Values.data.KafkaAddress }}
+    NBI_IngressType: {{.Values.global.mtcil.ingress.enableLB}}
+    CMAAS_NETCONF_PORT: {{.Values.global.mtcil.ingress.lbL4netconfPort}}
+    APIGW_PORT: {{.Values.global.mtcil.ingress.lbL7ingressPort}}
+    FMAAS_HTTP_PORT: {{.Values.global.mtcil.ingress.lbL7ingressPort}}
+    MGMT_IP: {{.Values.global.mtcil.ingress.lbIngressIP}}
+    heartbeat:
+      defaultInterval: {{.Values.data.heartbeat.defaultInterval}}
+      additionalFields:
+        {{- if .Values.global.dnPrefix }}
+        dnPrefix: {{.Values.global.dnPrefix}}
+        {{- else }}
+        dnPrefix: {{.Values.data.MTCILInfo.dnPrefix}}
+        {{- end }}
+        mtcilId: {{.Values.global.nf.mtcilId}}
+        mgmtIP: {{.Values.data.MTCILInfo.MGMT_IP}}
+
+    measurement:
+      defaultInterval: {{.Values.data.measurement.defaultInterval}}
+      maxBufferingDuration: {{.Values.data.measurement.maxBufferingDuration}}
+      prometheus: 
+      {{- if .Values.mmaas_enabled }}
+        address: {{ printf "http://%s-prometheus-server:9090" .Release.Name | quote }}
+      {{- else }}
+        address: {{.Values.data.measurement.prometheus.paas_endpoint}}
+      {{- end }}
+        timeout: {{.Values.data.measurement.prometheus.timeout}}
+        keepalive: {{.Values.data.measurement.prometheus.keepalive}}
+    event:
+      maxSize: {{.Values.data.event.maxSize}}
+      retryInterval: {{.Values.data.event.retryInterval}}
+      maxMissed: {{.Values.data.event.maxMissed}}
+    alertManager:
+      bind: {{.Values.data.alertManager.bind.bindip}}:{{.Values.data.alertManager.bind.port}}
+    cluster:
+      debug: {{.Values.data.cluster.debug}}
+      displayLogs: {{.Values.data.cluster.displayLogs}}
+    loglevel: {{.Values.data.loglevel}}
+{{- end }}

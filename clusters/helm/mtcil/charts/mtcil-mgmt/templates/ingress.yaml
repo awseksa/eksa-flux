@@ -1,0 +1,52 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (.Values.global.mtcil.ingress.enableLB) (eq .Values.global.mtcil.ingress.lbController "Traefik") }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+
+{{- range $name, $config := .Values.mtcilIngress.L7Ingress }}
+{{- if $config.enable }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ $name }}
+  labels:
+    app.kubernetes.io/name: {{ $config.service }}
+    app.kubernetes.io/instance: {{ $cnfHdr.nfVariables.root.Release.Name }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  entryPoints:
+    - {{ $config.entryPoint }}
+  routes:
+  - match: PathPrefix(`{{ $config.prefix }}`)
+    kind: Rule
+    services:
+    - name: {{ printf "%s" ( ternary ( printf "%s-" ( $cnfHdr.nfVariables.root.Release.Name | toString ) ) "" $config.servicePrefixRN ) }}{{ $config.service }}
+      port: {{ $config.port }}
+{{- end }}
+{{- end }}
+
+{{- range $name, $config := .Values.mtcilIngress.L4TCPIngress }}
+{{- if $config.enable }}
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: {{ $name }}
+  labels:
+    app.kubernetes.io/name: {{ $config.service }}
+    app.kubernetes.io/instance: {{ $cnfHdr.nfVariables.root.Release.Name }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  entryPoints:
+    - {{ $config.entryPoint }}
+  routes:
+    - match: HostSNI(`*`)
+      services:
+      - name: {{ printf "%s" ( ternary ( printf "%s-" ( $cnfHdr.nfVariables.root.Release.Name | toString ) ) "" $config.servicePrefixRN ) }}{{ $config.service }}
+        port: {{ $config.port }}
+{{- end }}
+{{- end }}
+
+{{- end }}
+{{- end }}

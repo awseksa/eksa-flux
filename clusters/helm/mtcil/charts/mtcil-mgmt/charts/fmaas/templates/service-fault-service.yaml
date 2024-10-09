@@ -1,0 +1,18 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Service
+{{- include "cnfTplMetadata_2_27" (dict "setOffset" "0" "cnfHdr" $cnfHdr "metadata" (dict "name" "fault-service")) }}
+spec:
+ selector:
+   app: fmaas
+ ports:
+ - name: rest
+   port: 12090
+   targetPort: 8000
+{{- if .Values.global.mtcil.ingress.enableLB }}
+   nodePort: 0
+{{- end }}
+ type: {{ printf "%s" ( ternary "ClusterIP" "NodePort" .Values.global.mtcil.ingress.enableLB ) }}
+{{- end }}

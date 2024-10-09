@@ -1,0 +1,241 @@
+{{- if and .Values.global.mtcil.enableRBACprovisioning .Values.global.mtcil.enableMandatoryServices -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+{{- if (not .Values.global.mtcil.scope.namespaced) }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    nwFnPrefix: {{ $cnfHdr.nfVariables.nfPrefix }}
+    topo-gw.fqdn: topo-gw.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+    topo-engine.fqdn: topo-engine.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments","statefulsets","daemonsets"]
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "patch", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]  
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "watch", "list", "update", "patch"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "watch", "list"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "watch"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["clusterroles"]
+  verbs: ["get", "list"]
+{{- if not .Values.global.mtcil.authManagement.enableSecretDiscovery }}
+- apiGroups: ["admissionregistration.k8s.io"]
+  resources: ["mutatingwebhookconfigurations"]
+  verbs: ["create", "update", "get"] 
+{{- else }}
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+{{- end }}
+{{- if or .Values.global.mtcil.optionalDeployment.kruise .Values.global.mtcil.optionalDeployment.mtcilRBAC.kruise }}
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+{{- end }}
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+subjects:
+- kind: ServiceAccount
+  name: mtcil-sa
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+roleRef:
+  kind: ClusterRole
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil
+  apiGroup: rbac.authorization.k8s.io
+
+{{- else if and .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+{{- $globalScope := . }}
+{{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+{{- with $globalScope }}
+{{- if and .Values.global.mtcil.scope.enableNamespaceListRBAC ( ne ( $cnfHdr.nfVariables.nfPrefix | quote) ($namespace | quote) ) }}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    nwFnPrefix: {{ $namespace }}
+    topo-gw.fqdn: topo-gw.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+    topo-engine.fqdn: topo-engine.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments","statefulsets","daemonsets"]
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "patch", "delete", "deletecollection"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+{{- if or .Values.global.mtcil.optionalDeployment.kruise .Values.global.mtcil.optionalDeployment.mtcilRBAC.kruise }}
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+{{- end }}
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+subjects:
+- kind: ServiceAccount
+  name: mtcil-sa
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+roleRef:
+  kind: Role
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil:local
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    nwFnPrefix: {{ $cnfHdr.nfVariables.nfPrefix }}
+    topo-gw.fqdn: topo-gw.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+    topo-engine.fqdn: topo-engine.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+rules:
+- apiGroups: ["apps"]
+  resources: ["deployments","statefulsets"]
+  verbs: ["get", "list", "watch", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list", "watch", "patch", "delete"]
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "list", "watch", "update", "patch"]
+- apiGroups: [""]
+  resources: ["endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["secrets"]
+  verbs: ["get", "watch", "list"]
+{{- if or .Values.global.mtcil.optionalDeployment.kruise .Values.global.mtcil.optionalDeployment.mtcilRBAC.kruise }}
+- apiGroups: ["apps.kruise.io"]
+  resources: ["clonesets"]
+  verbs: ["get", "list", "watch", "patch", "update"]
+{{- end }}
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["prometheusrules"]
+  verbs: ["get", "create", "list", "delete", "update", "patch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["podmonitors"]
+  verbs: ["get", "create", "list", "update"]
+{{- if (eq .Values.global.mtcil.securityPolicy.type "scc")}}
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  resourceNames: ["{{.Values.global.mtcil.securityPolicy.name}}"]
+  verbs: ["use"]
+{{- end }}
+{{- if (eq .Values.global.mtcil.securityPolicy.type "psp")}}
+- apiGroups: ["policy"]
+  resources: ["podsecuritypolicies"]
+  resourceNames: ["{{.Values.global.mtcil.securityPolicy.name}}"]
+  verbs: ["use"]
+{{- end }}
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil:local
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+subjects:
+- kind: ServiceAccount
+  name: mtcil-sa
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+roleRef:
+  kind: Role
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil:local
+  apiGroup: rbac.authorization.k8s.io
+
+---
+{{- if .Values.global.mtcil.scope.enablePriviledgedRBAC }}
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil:privileged
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    nwFnPrefix: {{ $cnfHdr.nfVariables.nfPrefix }}
+    topo-gw.fqdn: topo-gw.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+    topo-engine.fqdn: topo-engine.{{ $cnfHdr.nfVariables.nfPrefix }}:8080
+rules:
+- apiGroups: [""]
+  resources: ["nodes"]
+  verbs: ["get", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil:privileged
+  labels:
+    app.kubernetes.io/name: mtcil
+    app.kubernetes.io/instance: {{ .Release.Name }}
+subjects:
+- kind: ServiceAccount
+  name: mtcil-sa
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+roleRef:
+  kind: ClusterRole
+  name: {{ $cnfHdr.nfVariables.mtcilId }}-mtcil:privileged
+  apiGroup: rbac.authorization.k8s.io
+
+{{- end }}
+{{- end }}

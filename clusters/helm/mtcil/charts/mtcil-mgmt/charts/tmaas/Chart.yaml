@@ -1,0 +1,11 @@
+annotations:
+  charts.openshift.io/name: mtcil
+apiVersion: v2
+appVersion: "1.0"
+description: A Helm chart for TMaaS.
+kubeVersion: '>= 1.16.0-0'
+maintainers:
+- email: support@mavenir.com
+  name: mtcil team
+name: tmaas
+version: 23.3.1-p5

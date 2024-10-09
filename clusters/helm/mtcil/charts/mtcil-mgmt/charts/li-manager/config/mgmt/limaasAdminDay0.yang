@@ -1,0 +1,178 @@
+module mavenir-mtcil-limaas-manager-adminday0-config {
+    namespace "urn:mavenir:ns:yang:cnp:mtcil:limaas-manager-adminday0-23.3.1-20231215";
+    prefix mtcil-limaas-manager-adminday0;
+    import tailf-common { prefix tailf; }
+    revision "2020-09-07" {
+        description "Added limaas manager admin day0 config parameters";
+    }
+    container config {
+        tailf:callpoint configUpdate {
+            tailf:transaction-hook subtree;
+        }
+        container li_x1_interface {
+            description "The LI_X1 Interface component used to communicate between ADMF to NF";
+            leaf time1 {
+                type uint32;
+                default 5;
+                description "This timer time holds timer value (in seconds) for time duration within which NF should respond back to ADMF";
+            }
+            leaf time2 {
+                must "(current() >= (../time1)*2)" {
+                    error-message "time2 must be twice of time1";
+                }
+                type uint32;
+                default 15;
+                description "This timer holds timer value (in seconds) for time duration LI Message Handler shall wait for a response from ADMF";
+            }
+            leaf remove_all_destinations {
+                type boolean;
+                default false;
+                description "permanently remove all Destinations on the NF";
+            }
+            leaf deactivate_all_tasks {
+                type boolean;
+                default true;
+                description "This flag helps to enable or disable the DeactivateAllTasks operation in X1";
+            }
+            leaf ca_certificate {
+                type binary {
+                    length "1..1024";
+                }
+                //mandatory true;
+                description "CA certificate";
+            }
+            leaf smf_certificate {
+                type binary {
+                    length "1..1024";
+                }
+                //mandatory true;
+                description "SMF certificate";
+            }
+            list admf_list {
+                key "admf_id";
+                unique "admf_id";
+                leaf admf_id {
+                    type string;
+                    description "ADMF Identifier";
+                }
+                leaf admf_fqdn {
+                    type string;
+                    default "0.0.0.0";
+                    description "Fully-Qualified Domain Name (FQDN) or IPv4 address of ADMF";
+                }
+                leaf admf_port {
+                    type uint32 {
+                        range "0 .. 65535";
+                    }
+                    default 80;
+                    description "Port on which ADMF is listening on";
+                }
+                leaf report_destination_issue_request_path {
+                    type string {
+                       length "1..255";
+                    }
+                    description "ADMF URL path for Report Destination Issue Request (X1/T2/T3)";
+                }
+                leaf report_ne_issue_request_path {
+                    type string {
+                       length "1..255";
+                    }
+                    description "ADMF URL path for Report NE Issue Request (X1)";
+                }
+                leaf report_task_issue_request_path {
+                    type string {
+                        length "1..255";
+                    }
+                    description "ADMF URL path for Report Task Issue Request (X1)";
+                }
+                leaf admf_cert_file_name {
+                    type string {
+                        length "1..255";
+                    }
+                    description "ADMF certificate file name";
+                }
+                 leaf admf_subject_alt_name {
+                    type string {
+                        length "1..255";
+                    }
+                    description "Subject Alternate Name(SAN) in ADMF server certificate";
+                }
+            }
+            leaf n_retry {
+                type uint32 {
+                    range 1..10;
+                }
+                default 3;
+                description "Number of retry the LI shall attempt to reconnect with ADMF [1-10]";
+            }
+            leaf udsf_address {
+                type string {
+                    length "1..255";
+                }
+                // mandatory true;
+                description "The UDSF address ";
+            }
+            leaf fivegc_id {
+                type string {
+                    length "0..2048";
+                }
+                default "";
+                description "seed to generate symmetric key for mavcrypt utility";
+            }
+        } /*li_x1_interface */
+        container li_x_1_1_interface {
+          description "The LI_X1_1 Interface component towards ADMF, supports LI Manager to communicate with SAEGW";
+          leaf remote_svc_retry_count {
+                type int32 {
+                   range "1 .. 60";
+                }
+                description "Retry Count from x1_1 interface to remote service.";
+            }
+          leaf remote_svc_retry_interval {
+                type int32 {
+                  range "1 .. 60";
+               }
+               description "Retry Interval from x1_1 interface to remote service in seconds.";
+            }
+        } /*li_x_1_1_interface */
+        container x1_keep_alive {
+            description "The X1 keep alive component is used to configure keep alive config values";
+            leaf bkeep_alive_enable {
+                type boolean;
+                default true;
+                description "flag to check if keep alive is supported or not";
+            }
+            leaf time_p2 {
+                type uint32 {
+                   range "1 .. 120";
+                }
+                default 60;  // default 60 mins to support "Keep Alive" feature for LI_X1
+                description "X1 inactivity time interval in seconds to declare ADMF is down";
+            }
+            leaf bdel_all_litask_if_admfnotreach {
+                type boolean;
+                default false;
+                description "flag to trigger deactivateAlltasks if admf is not reachable on TIME_P2 timer expiry";
+            }
+        } /*x1_keep_alive */
+        container li_vz_interface {
+            leaf use_add_to_modify {
+                type boolean;
+                default true;
+                description "Whether to allow add target as modifytarget or not";
+            }
+            leaf li_cert {
+                type string;
+                description "LI secret certificate";
+            }
+            leaf li_key {
+                type string;
+                description "LI secret key";
+            }
+            leaf ca_cert {
+                type string;
+                description "LI ca certificate";
+            }
+        }
+    } /*limaas_config */
+} /*mavenir-mtcil-limaas */

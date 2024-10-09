@@ -1,0 +1,211 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.certmanager) (.Values.global.mtcil.enableServiceprovisioning)) }} 
+{{- if .Values.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  {{- if .Values.app_name_prefix }}
+  name: {{ .Values.app_name_prefix }}
+  {{- else }}
+  name: {{ template "cert-manager.fullname" . }}
+  {{- end }}
+  namespace: {{ template "cert-manager.namespace" . }}
+  labels:
+    {{ template "cert-manager.metadata.mtcillabels" (dict "specOffset" 4 "dot" .) }}
+    app: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "controller"
+    helm.sh/chart: {{ template "cert-manager.chart" . }}
+    {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+    {{- $pod_metaspec := .Values.componentSpec | default dict -}}
+    {{- if $custom_extensions.labels -}}
+    {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  annotations:
+    {{- if .Values.app_name_prefix }}
+    {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 4 "dot" . "nfService" .Values.app_name_prefix ) }}
+    {{- else }}
+    {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 4 "dot" . "nfService" (include "cert-manager.fullname" .)) }}
+    {{- end }}
+  {{- if .Values.deploymentAnnotations }}
+{{ toYaml .Values.deploymentAnnotations | indent 4 }}
+  {{- end }}
+  {{- if $custom_extensions.annotations -}}
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      app.kubernetes.io/component: "controller"
+  {{- with .Values.strategy }}
+  strategy:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      namespace: {{ template "cert-manager.namespace" . }}
+      labels:
+        {{ template "cert-manager.metadata.mtcillabels" (dict "specOffset" 8 "dot" .) }}
+        app: {{ template "cert-manager.name" . }}
+        app.kubernetes.io/name: {{ template "cert-manager.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/component: "controller"
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+        helm.sh/chart: {{ template "cert-manager.chart" . }}
+{{- if .Values.podLabels }}
+{{ toYaml .Values.podLabels | indent 8 }}
+{{- end }}
+       {{- if $custom_extensions.labels -}}
+       {{- range $key, $value := .Values.global.custom_extensions.labels }}
+        {{ $key }}: {{ $value | quote }}
+       {{- end }}
+       {{- end }}
+        {{- if $pod_metaspec.deployment -}}
+        {{- range $key, $value := $pod_metaspec.deployment.pod_metaspec.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      annotations:
+        {{- if .Values.app_name_prefix }}
+        {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 8 "dot" . "nfService" .Values.app_name_prefix ) }}
+        {{- else }}
+        {{ template "cert-manager.metadata.mtcilannotations" (dict "specOffset" 8 "dot" . "nfService" (include "cert-manager.fullname" .)) }}
+        {{- end }}
+      {{- if .Values.podAnnotations }}
+{{ toYaml .Values.podAnnotations | indent 8 }}
+      {{- end }}
+      {{- if and .Values.prometheus.enabled (not .Values.prometheus.servicemonitor.enabled) }}
+        prometheus.io/path: "/metrics"
+        prometheus.io/scrape: 'true'
+        prometheus.io/port: '9402'
+      {{- end }}
+      {{- if $custom_extensions.annotations -}}
+      {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+        {{ $key }}: {{ $value | quote }}
+      {{- end }}
+      {{- end }}
+    spec:
+      serviceAccountName: {{ template "cert-manager.serviceAccountName" . }}
+      {{- if .Values.global.priorityClassName }}
+      priorityClassName: {{ .Values.global.priorityClassName | quote }}
+      {{- end }}
+      {{- if .Values.volumes }}
+      volumes:
+{{ toYaml .Values.volumes | indent 8 }}
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.global.hub }}/{{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.global.mtcil.imagePullPolicy }}
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 10 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 10 }}
+{{- end }}
+          args:
+        {{- if (and (.Values.global.mtcil.scope.namespaced) ( not .Values.global.mtcil.scope.namespaceList)) }}
+          - --namespace={{ template "cert-manager.namespace" . }}
+        {{- end }}
+        {{- if .Values.global.logLevel }}
+          - --v={{ .Values.global.logLevel }}
+        {{- end }}
+        {{- if .Values.clusterResourceNamespace }}
+          - --cluster-resource-namespace={{ .Values.clusterResourceNamespace }}
+        {{- else }}
+          - --cluster-resource-namespace=$(POD_NAMESPACE)
+        {{- end }}
+          - --leader-election-namespace={{ template "cert-manager.namespace" . }}
+        {{- with .Values.global.leaderElection }}
+        {{- if .leaseDuration }}
+          - --leader-election-lease-duration={{ .leaseDuration }}
+        {{- end }}
+        {{- if .renewDeadline }}
+          - --leader-election-renew-deadline={{ .renewDeadline }}
+        {{- end }}
+        {{- if .retryPeriod }}
+          - --leader-election-retry-period={{ .retryPeriod }}
+        {{- end }}
+        {{- end }}
+        {{- if .Values.extraArgs }}
+{{ toYaml .Values.extraArgs | indent 10 }}
+        {{- end }}
+          {{- with .Values.ingressShim }}
+          {{- if .defaultIssuerName }}
+          - --default-issuer-name={{ .defaultIssuerName }}
+          {{- end }}
+          {{- if .defaultIssuerKind }}
+          - --default-issuer-kind={{ .defaultIssuerKind }}
+          {{- end }}
+          {{- if .defaultIssuerGroup }}
+          - --default-issuer-group={{ .defaultIssuerGroup }}
+          {{- end }}
+          {{- end }}
+          {{- if .Values.featureGates }}
+          - --feature-gates={{ .Values.featureGates }}
+          {{- end }}
+          - --controllers=certificaterequests-approver,certificaterequests-issuer-selfsigned,certificates-issuing,certificates-key-manager,certificates-metrics,certificates-readiness,certificates-request-manager,certificates-revision-manager,certificates-trigger,issuers
+          ports:
+          - containerPort: 9402
+            protocol: TCP
+          {{- if .Values.volumeMounts }}
+          volumeMounts:
+{{ toYaml .Values.volumeMounts | indent 12 }}
+          {{- end }}
+          env:
+          - name: POD_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+        {{- if .Values.extraEnv }}
+{{ toYaml .Values.extraEnv | indent 10 }}
+        {{- end }}
+          {{- if .Values.http_proxy }}
+          - name: HTTP_PROXY
+            value: {{ .Values.http_proxy }}
+          {{- end }}
+          {{- if .Values.https_proxy }}
+          - name: HTTPS_PROXY
+            value: {{ .Values.https_proxy }}
+          {{- end }}
+          {{- if .Values.no_proxy }}
+          - name: NO_PROXY
+            value: {{ .Values.no_proxy }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.infraNodeSelector) (.Values.global.mtcil.infraNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.infraNodeSelector.labelKey }}: {{ .Values.global.mtcil.infraNodeSelector.labelValue | quote }}
+      {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+{{- if .Values.podDnsPolicy }}
+      dnsPolicy: {{ .Values.podDnsPolicy }}
+{{- end }}
+{{- if .Values.podDnsConfig }}
+      dnsConfig:
+{{ toYaml .Values.podDnsConfig | indent 8 }}
+{{- end }}
+{{- if  .Values.podConfig }}
+{{ toYaml .Values.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+
+{{- if  .Values.affinity }}
+      affinity:
+{{ toYaml .Values.affinity | indent 8 }}
+{{- end }}
+{{- end -}}
+{{- end }}

@@ -1,0 +1,302 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.server.enabled -}}
+{{- if .Values.server.statefulSet.enabled -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+{{- if and (.Values.server.persistentVolume.storageClassName) ( .Values.global.mtcil.storage.isProviderMTCIL) }}
+{{- fail "Microservice Level StorageClass provisioning is not possible when mtcil provided local storageClass is enabled. Kindly Use local storage for all stateful pv or use cloud storage to override pv provision at microservice level." }} 
+{{- end }}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    {{- if .Values.server.app_name_prefix }}
+    {{ template "promethues.metadata.annotatetmaasspec" (dict "specOffset" 4 "cnfHdr" $cnfHdr "nfService" .Values.server.app_name_prefix ) }}
+    {{- else }}
+    {{ template "promethues.metadata.annotatetmaasspec" (dict "specOffset" 4 "cnfHdr" $cnfHdr "nfService" (include "prometheus.server.fullname" .) ) }}
+    {{- end }}
+{{- if .Values.server.statefulSet.annotations }}
+{{ toYaml .Values.server.statefulSet.annotations | indent 4 }}
+{{- end }}
+    {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+    {{- $pod_metaspec := .Values.server.componentSpec | default dict -}}
+    {{- if $custom_extensions.annotations -}}
+    {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  labels:
+    {{- include "prometheus.server.labels" . | nindent 4 }}
+    {{- if .Values.server.statefulSet.labels}}
+    {{ toYaml .Values.server.statefulSet.labels | nindent 4 }}
+    {{- end}}
+    {{- if $custom_extensions.labels -}}
+    {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+    {{- end }}
+  {{- if .Values.server.app_name_prefix }}
+  name: {{ .Values.server.app_name_prefix }}
+  {{- else }}
+  name: {{ template "prometheus.server.fullname" . }}
+  {{- end }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  serviceName: {{ template "prometheus.server.fullname" . }}-headless
+  selector:
+    matchLabels:
+      {{- include "prometheus.server.matchLabels" . | nindent 6 }}
+  replicas: {{ .Values.server.replicaCount }}
+  podManagementPolicy: {{ .Values.server.statefulSet.podManagementPolicy }}
+  template:
+    metadata:
+      annotations:
+        {{- if .Values.server.app_name_prefix }}
+        {{ template "promethues.metadata.annotatetmaasspec" (dict "specOffset" 8 "cnfHdr" $cnfHdr "nfService" .Values.server.app_name_prefix ) }}
+        {{- else }}
+        {{ template "promethues.metadata.annotatetmaasspec" (dict "specOffset" 8 "cnfHdr" $cnfHdr "nfService" (include "prometheus.server.fullname" .) ) }}
+        {{- end }}
+    {{- if .Values.server.podAnnotations }}
+{{ toYaml .Values.server.podAnnotations | indent 8 }}
+    {{- end }}
+        {{- if $custom_extensions.annotations -}}
+        {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+      labels:
+        {{- include "prometheus.server.labels" . | nindent 8 }}
+        {{- if .Values.server.statefulSet.labels}}
+        {{ toYaml .Values.server.statefulSet.labels | nindent 8 }}
+        {{- end}}
+        {{- if $custom_extensions.labels -}}
+        {{- range $key, $value := .Values.global.custom_extensions.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+        {{- if $pod_metaspec.deployment -}}
+        {{- range $key, $value := $pod_metaspec.deployment.pod_metaspec.labels }}
+        {{ $key }}: {{ $value | quote }}
+        {{- end }}
+        {{- end }}
+    spec:
+{{- if .Values.server.priorityClassName }}
+      priorityClassName: "{{ .Values.server.priorityClassName }}"
+{{- end }}
+{{- if .Values.server.schedulerName }}
+      schedulerName: "{{ .Values.server.schedulerName }}"
+{{- end }}
+      {{- if or (.Values.server.enableServiceLinks) (eq (.Values.server.enableServiceLinks | toString) "<nil>") }}
+      enableServiceLinks: true
+      {{- else }}
+      enableServiceLinks: false
+      {{- end }}
+{{- if  .Values.server.podConfig }}
+{{ toYaml .Values.server.podConfig | indent 6 }}
+{{- end }}
+{{- if .Values.global.mtcil.podConfig }}
+{{ toYaml .Values.global.mtcil.podConfig | indent 6 }}
+{{- end }}
+{{- if  .Values.server.affinity }}
+      affinity:
+{{ toYaml .Values.server.affinity | indent 8 }}
+{{- end }}
+      serviceAccountName: mtcil-sa
+      containers:
+        {{- if .Values.configmapReload.prometheus.enabled }}
+        - name: {{ template "prometheus.name" . }}-{{ .Values.server.name }}-{{ .Values.configmapReload.prometheus.name }}
+          image: "{{ .Values.global.hub }}/{{ .Values.configmapReload.prometheus.name }}:{{ .Values.configmapReload.prometheus.image.tag }}"
+          imagePullPolicy: "{{ .Values.global.mtcil.imagePullPolicy }}"
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 10 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 10 }}
+{{- end }}
+          args:
+            - --volume-dir=/etc/config
+            - --webhook-url=http://127.0.0.1:9090{{ .Values.server.prefixURL }}/-/reload
+          {{- range $key, $value := .Values.configmapReload.prometheus.extraArgs }}
+            - --{{ $key }}={{ $value }}
+          {{- end }}
+          {{- range .Values.configmapReload.prometheus.extraVolumeDirs }}
+            - --volume-dir={{ . }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.configmapReload.prometheus.resources | indent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+              readOnly: true
+          {{- range .Values.configmapReload.prometheus.extraConfigmapMounts }}
+            - name: {{ $.Values.configmapReload.prometheus.name }}-{{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
+        {{- end }}
+        - name: {{ template "prometheus.name" . }}-{{ .Values.server.name }}
+          image: "{{ .Values.global.hub }}/{{ template "prometheus.name" . }}:{{ .Values.server.image.tag }}"
+          imagePullPolicy: "{{ .Values.global.mtcil.imagePullPolicy }}"
+{{- if  .Values.containerConfig }}
+{{ toYaml .Values.containerConfig | indent 10 }}
+{{- else if .Values.global.mtcil.containerConfig }}
+{{ toYaml .Values.global.mtcil.containerConfig | indent 10 }}
+{{- end }}
+          {{- if .Values.server.env }}
+          env:
+{{ toYaml .Values.server.env | indent 12}}
+          {{- end }}
+          env:
+            - name: TZ
+              value: {{ .Values.global.timezone | quote }}
+          args:
+          {{- if .Values.server.retention }}
+            - --storage.tsdb.retention.time={{ .Values.server.retention }}
+          {{- end }}
+            - --config.file={{ .Values.server.configPath }}
+            - --storage.tsdb.path={{ .Values.server.persistentVolume.mountPath }}
+            - --web.console.libraries=/etc/prometheus/console_libraries
+            - --web.console.templates=/etc/prometheus/consoles
+          {{- range .Values.server.extraFlags }}
+            - --{{ . }}
+          {{- end }}
+          {{- range $key, $value := .Values.server.extraArgs }}
+            - --{{ $key }}={{ $value }}
+          {{- end }}
+          {{- if .Values.server.baseURL }}
+            - --web.external-url={{ .Values.server.baseURL }}
+          {{- end }}
+          ports:
+            - containerPort: 9090
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.server.prefixURL }}/-/ready
+              port: 9090
+            initialDelaySeconds: {{ .Values.server.readinessProbeInitialDelay }}
+            timeoutSeconds: {{ .Values.server.readinessProbeTimeout }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.server.prefixURL }}/-/healthy
+              port: 9090
+            initialDelaySeconds: {{ .Values.server.livenessProbeInitialDelay }}
+            timeoutSeconds: {{ .Values.server.livenessProbeTimeout }}
+          resources:
+{{ toYaml .Values.server.resources | indent 12 }}
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/config
+            - name: mmaas-vol
+              mountPath: {{ .Values.server.persistentVolume.mountPath }}
+              subPath: "{{ .Values.server.persistentVolume.subPath }}"
+          {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+          {{- range .Values.server.extraHostPathMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
+          {{- end }}
+          {{- range .Values.server.extraConfigmapMounts }}
+            - name: {{ $.Values.server.name }}-{{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
+          {{- range .Values.server.extraSecretMounts }}
+            - name: {{ .name }}
+              mountPath: {{ .mountPath }}
+              subPath: {{ .subPath }}
+              readOnly: {{ .readOnly }}
+          {{- end }}
+          {{- if .Values.server.extraVolumeMounts }}
+          {{ toYaml .Values.server.extraVolumeMounts | nindent 12 }}
+          {{- end }}
+       {{- if .Values.server.sidecarContainers }}
+       {{- toYaml .Values.server.sidecarContainers | nindent 8 }}
+       {{- end }}
+    {{- if .Values.imagePullSecrets }}
+      imagePullSecrets:
+       {{ toYaml .Values.imagePullSecrets | indent 2 }}
+    {{- end }}
+    {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.mgmtNodeSelector) (.Values.global.mtcil.mgmtNodeSelector.enabled) }}
+      nodeSelector:
+        {{ .Values.global.mtcil.mgmtNodeSelector.labelKey }}: {{ .Values.global.mtcil.mgmtNodeSelector.labelValue | quote }}
+    {{- end }}
+    {{- if .Values.server.hostAliases }}
+      hostAliases:
+{{ toYaml .Values.server.hostAliases | indent 8 }}
+    {{- end }}
+    {{- if and .Values.server.securityContext  ( and ( not ((.Values.containerConfig).securityContext) ) ( not ((.Values.global.mtcil.containerConfig).securityContext) ) )}}
+      securityContext:
+{{ toYaml .Values.server.securityContext | indent 8 }}
+    {{- end }}
+    {{- if .Values.server.tolerations }}
+      tolerations:
+{{ toYaml .Values.server.tolerations | indent 8 }}
+    {{- end }}
+      terminationGracePeriodSeconds: {{ .Values.server.terminationGracePeriodSeconds }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ if .Values.server.configMapOverrideName }}{{ .Release.Name }}-{{ .Values.server.configMapOverrideName }}{{- else }}{{ template "prometheus.server.fullname" . }}{{- end }}
+      {{- if or (eq .Values.global.mtcil.logging_mode "FILE") (eq .Values.global.mtcil.logging_mode "FILEANDSTDOUT") }}
+      {{- range .Values.server.extraHostPathMounts }}
+        - name: {{ .name }}
+          hostPath:
+            path: {{ .hostPath }}
+      {{- end }}
+      {{- end }}
+      {{- range .Values.configmapReload.prometheus.extraConfigmapMounts }}
+        - name: {{ $.Values.configmapReload.prometheus.name }}-{{ .name }}
+          configMap:
+            name: {{ .configMap }}
+      {{- end }}
+      {{- range .Values.server.extraConfigmapMounts }}
+        - name: {{ $.Values.server.name }}-{{ .name }}
+          configMap:
+            name: {{ .configMap }}
+      {{- end }}
+      {{- range .Values.server.extraSecretMounts }}
+        - name: {{ .name }}
+          secret:
+            secretName: {{ .secretName }}
+      {{- end }}
+      {{- range .Values.configmapReload.prometheus.extraConfigmapMounts }}
+        - name: {{ .name }}
+          configMap:
+            name: {{ .configMap }}
+      {{- end }}
+{{- if .Values.server.extraVolumes }}
+{{ toYaml .Values.server.extraVolumes | indent 8}}
+{{- end }}
+{{- if .Values.server.persistentVolume.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: mmaas-vol
+        {{- if .Values.server.persistentVolume.annotations }}
+        annotations:
+{{ toYaml .Values.server.persistentVolume.annotations | indent 10 }}
+        {{- end }}
+      spec:
+        accessModes:
+{{ toYaml .Values.server.persistentVolume.accessModes | indent 10 }}
+        resources:
+          requests:
+            storage: "{{ .Values.server.persistentVolume.storageClaim }}"
+        {{- if .Values.server.persistentVolume.storageClassName }}
+        storageClassName: {{ .Values.server.persistentVolume.storageClassName }}
+        {{- else }}
+        storageClassName: {{ .Values.global.mtcil.storage.storageClass }}
+        {{- end }}
+      {{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.storage) (not .Values.server.persistentVolume.storageClassName) (.Values.global.mtcil.storage.isProviderMTCIL) }}
+        selector:
+          matchLabels:
+            mmaas-vol: "true"
+      {{- end }}
+{{- else }}
+        - name: mmaas-vol
+          emptyDir: {}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}

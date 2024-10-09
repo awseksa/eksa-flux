@@ -1,0 +1,91 @@
+module mavenir-mtcil-limaas-proxy-admin-config {
+    namespace "urn:mavenir:ns:yang:cnp:mtcil:limaas-proxy-23.3.1-20231215";
+    prefix mtcil-limaas-proxy-admin;
+    import tailf-common { prefix tailf; }
+    revision "2020-09-07" {
+        description "Added limaas proxy config parameters";
+    }
+    container config {
+        tailf:callpoint configUpdate {
+            tailf:transaction-hook subtree;
+        }
+        container li_x2_interface {
+            description "The LI_X2 Interface component used to communicate between NF to MDF ";
+            leaf time_p1 {
+                type uint32 {
+                    range 30..3600;
+                }
+                default 60;
+                description "Holds the timer TIME_P1(in seconds) for the time duration, LI_X2 Proxy shall send Keep Alive message to each configure MDF2 destination,[30-3600]";
+            }
+            leaf time_p2 {
+                type uint32 {
+                    range 30..3600;
+                }
+                default 180;
+                description "Holds the timer TIME_P2(in seconds) for the time duration, Keep Alive Acknowledgement message from individual remote MDF2 [30-3600]";
+            }
+            leaf n_retry {
+                type uint32 {
+                    range 1..10;
+                }
+                default 3;
+                description "Number of retry the LI_X2 Proxy shall attempt to reconnect with that MDF2 [1-10]";
+            }
+            leaf report_periodicity {
+                type uint32 {
+                    range 30..3600;
+                }
+                default 180;
+                description "The LI_X2 Proxy shall send report for individual ongoing LI Task with periodicity[30-3600]";
+            }
+            leaf storage_volume_threshold {
+                type uint32 {
+                    range 0..100;
+                }
+                default 80;
+                description "storage volume threshold (in %) for LI_X2 Proxy [0-100]";
+            }
+            leaf retain_iri_period {
+                type uint32 {
+                    range 0..216;
+                }
+                default 36;
+                description "Holds the timer value (in hours) for the time duration, the LI_X2 Proxy shall retain and store all incoming X2 PDUs [0-216]";
+            }
+            leaf udsf_address {
+                type string {
+                    length "1..255";
+                }
+                // mandatory true;
+                description "The UDSF address ";
+            }
+            leaf ipsec_enabled {
+                type boolean;
+                default "true";
+                description "Flag to determine if ipsec functionality is enabled";
+            }
+            leaf fivegc_id {
+                type string {
+                    length "0..2048";
+                }
+                default "";
+                description "seed to generate symmetric key for mavcrypt utility";
+            }
+            // leaf ca_certificate {
+            //     type binary {
+            //         length "1..1024";
+            //     }
+            //     mandatory true;
+            //     description "CA certificate";
+            // }
+            // leaf mdf2_certificate {
+            //     type binary {
+            //         length "1..1024";
+            //     }
+            //     mandatory true;
+            //     description "MDF2s certificate";
+            // }
+        } /*li_x2_interface */
+    } /*limaasProxy_admin_config */
+} /*mavenir-mtcil-limaasProxy */

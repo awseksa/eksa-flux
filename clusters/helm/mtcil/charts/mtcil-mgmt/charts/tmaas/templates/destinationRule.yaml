@@ -1,0 +1,18 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if and (eq (.Values.global.mtcil.ingress.lbController | toString) "istio") .Values.global.mtcil.ingress.enableLB }}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: tmaas
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  host: tmaas
+  subsets:
+    - name: v1
+      labels:
+        app: tmaas
+        mtcilId: {{ $cnfHdr.nfVariables.mtcilId }}
+{{- end }}
+{{- end }}

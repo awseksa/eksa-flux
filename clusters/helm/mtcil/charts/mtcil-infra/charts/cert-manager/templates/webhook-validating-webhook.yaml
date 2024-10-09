@@ -1,0 +1,59 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.certmanager) (.Values.global.mtcil.enableWebhookprovisioning)) }}
+{{- if .Values.enabled -}}
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  name: {{ include "webhook.fullname" . }}
+  labels:
+    app: {{ include "webhook.name" . }}
+    app.kubernetes.io/name: {{ include "webhook.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/component: "webhook"
+    helm.sh/chart: {{ include "webhook.chart" . }}
+  annotations:
+    cert-manager.io/inject-ca-from-secret: "{{ template "cert-manager.namespace" . }}/{{ template "webhook.fullname" . }}-ca"
+  {{- if .Values.webhook.validatingWebhookConfigurationAnnotations }}
+{{ toYaml .Values.webhook.validatingWebhookConfigurationAnnotations | indent 4 }}
+  {{- end }}
+webhooks:
+  - name: webhook.cert-manager.io
+    namespaceSelector:
+      {{- if .Values.global.mtcil.scope.namespaced }}
+      matchLabels:
+        {{- if and .Values.global.nf .Values.global.nf.nfId }}
+        mtcilMOID: {{ .Values.global.nf.nfId }}
+        {{- else }}
+        mtcilMOID: {{ .Values.nf.nfId }}
+        {{- end }}
+      {{- end }}
+      matchExpressions:
+      - key: "cert-manager.io/disable-validation"
+        operator: "NotIn"
+        values:
+        - "true"
+      - key: "name"
+        operator: "NotIn"
+        values:
+        - {{ template "cert-manager.namespace" . }}
+    rules:
+      - apiGroups:
+          - "cert-manager.io"
+        apiVersions:
+          - "*"
+        operations:
+          - CREATE
+          - UPDATE
+        resources:
+          - "*/*"
+    admissionReviewVersions: ["v1", "v1beta1"]
+    timeoutSeconds: {{ .Values.webhook.timeoutSeconds }}
+    failurePolicy: Fail
+    sideEffects: None
+    clientConfig:
+      service:
+        name: {{ template "webhook.fullname" . }}
+        namespace: {{ template "cert-manager.namespace" . }}
+        path: /validate
+{{- end -}}
+{{- end }}

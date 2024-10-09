@@ -1,0 +1,1198 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "MTCIL_TMaaS_EXECUTE_OPERATIONS_API",
+    "description": "This open API specification constitutes a list of operations supported by MTCIL TMaaS microservice",
+    "termsOfService": "https://www.mavenir.com/terms-use/",
+    "contact": {
+      "name": "Mavenir Systems Private Limited",
+      "url": "https://www.mavenir.com/contact-us/",
+      "email": "support@mavenir.com"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "http://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "1.0.0"
+  },
+  "servers": [
+    {
+      "url": "/api/v1/mtcil-mgmt",
+      "description": "MTCIL CNF server operations base URL"
+    }
+  ],
+  "paths": {
+    "/tmaas/operations/cnf-restart": {
+      "post": {
+        "tags": [
+          "invocationMode:unicast",
+          "tmaas",
+          "cnf restart exec api"
+        ],
+        "summary": "API to initiate CNF restart process at MTCIL TMaaS microservice",
+        "description": "This API is exposed by MTCIL TMaaS microservice for NBI systems such as mCMS to initiate CNF restart process. The MTCIL TMaaS will initiate restart of the microservice pods associated with the CNF identified/managed by TMaaS.",
+        "operationId": "cnfRestart",
+        "requestBody": {
+          "description": "This represents the CNF Restart Request Information",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "description": "CNF Restart Information",
+                "properties": {
+                  "cnfList": {
+                    "type": "array",
+                    "description": "This is list (one or more) of CNF identifier(s) as specified in the CNF charts (values.yaml) to be restarted by MTCIL TMaaS, the maximum CNFs in the list at a time by default can be 10",
+                    "items": {
+                      "type": "string",
+                      "example": "cucp1 or cucp1,cucp2,cucp3,cucp4 or 8100123456 or 8100123451,8100123452,8100123453,8100123454"
+                    }
+                  },
+                  "restartType": {
+                    "type": "string",
+                    "description": "This identifies the restart methods defining the type of cnf restart to be performed by MTCIL TMaaS such as rolling restart or deletion of collection of pods, the default being podCollectionDelete",
+                    "enum": [
+                      "podCollectionDelete",
+                      "rollingRestart"
+                    ]
+                  }
+                },
+                "required": [
+                  "cnfList"
+                ]
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "description": "The status information corresponding to the initiation of the  restart process for each CNF",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "cnf": {
+                        "type": "string",
+                        "description": "This is CNF identifier(s) as specified in the CNF charts (values.yaml)",
+                        "example": "cucp1"
+                      },
+                      "status": {
+                        "type": "string",
+                        "description": "The HTTP status code for this occurrence of the problem",
+                        "example": 404
+                      },
+                      "description": {
+                        "type": "string",
+                        "description": "The HTTP status description for this occurrence of the problem",
+                        "example": "Not Found"
+                      },
+                      "cause": {
+                        "type": "string",
+                        "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                        "example": "NFID_FOR_RESTART_DOES_NOT_EXIST"
+                      },
+                      "detail": {
+                        "type": "string",
+                        "description": "A human-readable explanation specific to this occurrence of the problem",
+                        "example": "request contains an nfId which does not exist"
+                      },
+                      "invalidParams": {
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "param": {
+                              "type": "string",
+                              "example": "path: nfid",
+                              "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                            },
+                            "reason": {
+                              "type": "string",
+                              "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                            }
+                          },
+                          "required": [
+                            "param"
+                          ]
+                        },
+                        "minItems": 1,
+                        "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                      },
+                      "nfsResponses": {
+                        "type": "array",
+                        "description": "This represents the status of the initiation of the rolling restart for all the applicable nfService within the CNF",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "nfService": {
+                              "type": "string",
+                              "description": "This is service identifier as specified in the CNF charts (values.yaml)",
+                              "example": "gnbmgr"
+                            },
+                            "status": {
+                              "type": "string",
+                              "description": "The HTTP status code for this occurrence of the problem",
+                              "example": 500
+                            },
+                            "description": {
+                              "type": "string",
+                              "description": "The HTTP status description for this occurrence of the problem",
+                              "example": "Internal Server Error"
+                            },
+                            "cause": {
+                              "type": "string",
+                              "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                              "example": "SERVER_NOT_REACHABLE"
+                            },
+                            "detail": {
+                              "type": "string",
+                              "description": "A human-readable explanation specific to this occurrence of the problem",
+                              "example": "rolling restart operation initiation failed for the nfService due to server error"
+                            },
+                            "invalidParams": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "param": {
+                                    "type": "string",
+                                    "example": "path: nfid",
+                                    "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                                  },
+                                  "reason": {
+                                    "type": "string",
+                                    "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                                  }
+                                },
+                                "required": [
+                                  "param"
+                                ]
+                              },
+                              "minItems": 1,
+                              "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The HTTP status code for this occurrence of the problem",
+                      "example": 400
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "A human-readable explanation specific to this occurrence of the problem",
+                      "example": "Unable to execute command due to missing JSON IE"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                      "example": "MANDATORY_IE_MISSING"
+                    },
+                    "invalidParams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "param": {
+                            "type": "string",
+                            "example": "path: nfid",
+                            "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                          }
+                        },
+                        "required": [
+                          "param"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The HTTP status code for this occurrence of the problem",
+                      "example": 400
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "A human-readable explanation specific to this occurrence of the problem",
+                      "example": "Unable to execute command due to missing JSON IE"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                      "example": "MANDATORY_IE_MISSING"
+                    },
+                    "invalidParams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "param": {
+                            "type": "string",
+                            "example": "path: nfid",
+                            "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                          }
+                        },
+                        "required": [
+                          "param"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The HTTP status code for this occurrence of the problem",
+                      "example": 400
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "A human-readable explanation specific to this occurrence of the problem",
+                      "example": "Unable to execute command due to missing JSON IE"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                      "example": "MANDATORY_IE_MISSING"
+                    },
+                    "invalidParams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "param": {
+                            "type": "string",
+                            "example": "path: nfid",
+                            "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                          }
+                        },
+                        "required": [
+                          "param"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The HTTP status code for this occurrence of the problem",
+                      "example": 400
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "A human-readable explanation specific to this occurrence of the problem",
+                      "example": "Unable to execute command due to missing JSON IE"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                      "example": "MANDATORY_IE_MISSING"
+                    },
+                    "invalidParams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "param": {
+                            "type": "string",
+                            "example": "path: nfid",
+                            "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                          }
+                        },
+                        "required": [
+                          "param"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/problem+json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "description": "The HTTP status code for this occurrence of the problem",
+                      "example": 400
+                    },
+                    "detail": {
+                      "type": "string",
+                      "description": "A human-readable explanation specific to this occurrence of the problem",
+                      "example": "Unable to execute command due to missing JSON IE"
+                    },
+                    "cause": {
+                      "type": "string",
+                      "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                      "example": "MANDATORY_IE_MISSING"
+                    },
+                    "invalidParams": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "param": {
+                            "type": "string",
+                            "example": "path: nfid",
+                            "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                          },
+                          "reason": {
+                            "type": "string",
+                            "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                          }
+                        },
+                        "required": [
+                          "param"
+                        ]
+                      },
+                      "minItems": 1,
+                      "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "requestBodies": {
+      "CNFRestartOperReqInfo": {
+        "description": "This represents the CNF Restart Request Information",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "description": "CNF Restart Information",
+              "properties": {
+                "cnfList": {
+                  "type": "array",
+                  "description": "This is list (one or more) of CNF identifier(s) as specified in the CNF charts (values.yaml) to be restarted by MTCIL TMaaS, the maximum CNFs in the list at a time by default can be 10",
+                  "items": {
+                    "type": "string",
+                    "example": "cucp1 or cucp1,cucp2,cucp3,cucp4 or 8100123456 or 8100123451,8100123452,8100123453,8100123454"
+                  }
+                },
+                "restartType": {
+                  "type": "string",
+                  "description": "This identifies the restart methods defining the type of cnf restart to be performed by MTCIL TMaaS such as rolling restart or deletion of collection of pods, the default being podCollectionDelete",
+                  "enum": [
+                    "podCollectionDelete",
+                    "rollingRestart"
+                  ]
+                }
+              },
+              "required": [
+                "cnfList"
+              ]
+            }
+          }
+        },
+        "required": true
+      }
+    },
+    "responses": {
+      "400ErrorResponse": {
+        "description": "Bad Request",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "The HTTP status code for this occurrence of the problem",
+                  "example": 400
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "example": "Unable to execute command due to missing JSON IE"
+                },
+                "cause": {
+                  "type": "string",
+                  "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                  "example": "MANDATORY_IE_MISSING"
+                },
+                "invalidParams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "param": {
+                        "type": "string",
+                        "example": "path: nfid",
+                        "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                      }
+                    },
+                    "required": [
+                      "param"
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "401ErrorResponse": {
+        "description": "Unauthorized",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "The HTTP status code for this occurrence of the problem",
+                  "example": 400
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "example": "Unable to execute command due to missing JSON IE"
+                },
+                "cause": {
+                  "type": "string",
+                  "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                  "example": "MANDATORY_IE_MISSING"
+                },
+                "invalidParams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "param": {
+                        "type": "string",
+                        "example": "path: nfid",
+                        "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                      }
+                    },
+                    "required": [
+                      "param"
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "404ErrorResponse": {
+        "description": "Not Found",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "The HTTP status code for this occurrence of the problem",
+                  "example": 400
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "example": "Unable to execute command due to missing JSON IE"
+                },
+                "cause": {
+                  "type": "string",
+                  "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                  "example": "MANDATORY_IE_MISSING"
+                },
+                "invalidParams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "param": {
+                        "type": "string",
+                        "example": "path: nfid",
+                        "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                      }
+                    },
+                    "required": [
+                      "param"
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "500ErrorResponse": {
+        "description": "Internal Server Error",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "The HTTP status code for this occurrence of the problem",
+                  "example": 400
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "example": "Unable to execute command due to missing JSON IE"
+                },
+                "cause": {
+                  "type": "string",
+                  "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                  "example": "MANDATORY_IE_MISSING"
+                },
+                "invalidParams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "param": {
+                        "type": "string",
+                        "example": "path: nfid",
+                        "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                      }
+                    },
+                    "required": [
+                      "param"
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "503ErrorResponse": {
+        "description": "Service Unavailable",
+        "content": {
+          "application/problem+json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "status": {
+                  "type": "string",
+                  "description": "The HTTP status code for this occurrence of the problem",
+                  "example": 400
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "example": "Unable to execute command due to missing JSON IE"
+                },
+                "cause": {
+                  "type": "string",
+                  "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                  "example": "MANDATORY_IE_MISSING"
+                },
+                "invalidParams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "param": {
+                        "type": "string",
+                        "example": "path: nfid",
+                        "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                      }
+                    },
+                    "required": [
+                      "param"
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "CNFRestartOperRespData": {
+        "description": "OK",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "array",
+              "description": "The status information corresponding to the initiation of the  restart process for each CNF",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "cnf": {
+                    "type": "string",
+                    "description": "This is CNF identifier(s) as specified in the CNF charts (values.yaml)",
+                    "example": "cucp1"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "The HTTP status code for this occurrence of the problem",
+                    "example": 404
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "The HTTP status description for this occurrence of the problem",
+                    "example": "Not Found"
+                  },
+                  "cause": {
+                    "type": "string",
+                    "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                    "example": "NFID_FOR_RESTART_DOES_NOT_EXIST"
+                  },
+                  "detail": {
+                    "type": "string",
+                    "description": "A human-readable explanation specific to this occurrence of the problem",
+                    "example": "request contains an nfId which does not exist"
+                  },
+                  "invalidParams": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "param": {
+                          "type": "string",
+                          "example": "path: nfid",
+                          "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                        }
+                      },
+                      "required": [
+                        "param"
+                      ]
+                    },
+                    "minItems": 1,
+                    "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                  },
+                  "nfsResponses": {
+                    "type": "array",
+                    "description": "This represents the status of the initiation of the rolling restart for all the applicable nfService within the CNF",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "nfService": {
+                          "type": "string",
+                          "description": "This is service identifier as specified in the CNF charts (values.yaml)",
+                          "example": "gnbmgr"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "The HTTP status code for this occurrence of the problem",
+                          "example": 500
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "The HTTP status description for this occurrence of the problem",
+                          "example": "Internal Server Error"
+                        },
+                        "cause": {
+                          "type": "string",
+                          "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                          "example": "SERVER_NOT_REACHABLE"
+                        },
+                        "detail": {
+                          "type": "string",
+                          "description": "A human-readable explanation specific to this occurrence of the problem",
+                          "example": "rolling restart operation initiation failed for the nfService due to server error"
+                        },
+                        "invalidParams": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "param": {
+                                "type": "string",
+                                "example": "path: nfid",
+                                "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                              },
+                              "reason": {
+                                "type": "string",
+                                "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                              }
+                            },
+                            "required": [
+                              "param"
+                            ]
+                          },
+                          "minItems": 1,
+                          "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "CNFRestartInfo": {
+        "type": "object",
+        "description": "CNF Restart Information",
+        "properties": {
+          "cnfList": {
+            "type": "array",
+            "description": "This is list (one or more) of CNF identifier(s) as specified in the CNF charts (values.yaml) to be restarted by MTCIL TMaaS, the maximum CNFs in the list at a time by default can be 10",
+            "items": {
+              "type": "string",
+              "example": "cucp1 or cucp1,cucp2,cucp3,cucp4 or 8100123456 or 8100123451,8100123452,8100123453,8100123454"
+            }
+          },
+          "restartType": {
+            "type": "string",
+            "description": "This identifies the restart methods defining the type of cnf restart to be performed by MTCIL TMaaS such as rolling restart or deletion of collection of pods, the default being podCollectionDelete",
+            "enum": [
+              "podCollectionDelete",
+              "rollingRestart"
+            ]
+          }
+        },
+        "required": [
+          "cnfList"
+        ]
+      },
+      "CNFRestartOperStatus": {
+        "type": "array",
+        "description": "The status information corresponding to the initiation of the  restart process for each CNF",
+        "items": {
+          "type": "object",
+          "properties": {
+            "cnf": {
+              "type": "string",
+              "description": "This is CNF identifier(s) as specified in the CNF charts (values.yaml)",
+              "example": "cucp1"
+            },
+            "status": {
+              "type": "string",
+              "description": "The HTTP status code for this occurrence of the problem",
+              "example": 404
+            },
+            "description": {
+              "type": "string",
+              "description": "The HTTP status description for this occurrence of the problem",
+              "example": "Not Found"
+            },
+            "cause": {
+              "type": "string",
+              "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+              "example": "NFID_FOR_RESTART_DOES_NOT_EXIST"
+            },
+            "detail": {
+              "type": "string",
+              "description": "A human-readable explanation specific to this occurrence of the problem",
+              "example": "request contains an nfId which does not exist"
+            },
+            "invalidParams": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "param": {
+                    "type": "string",
+                    "example": "path: nfid",
+                    "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                  }
+                },
+                "required": [
+                  "param"
+                ]
+              },
+              "minItems": 1,
+              "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+            },
+            "nfsResponses": {
+              "type": "array",
+              "description": "This represents the status of the initiation of the rolling restart for all the applicable nfService within the CNF",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "nfService": {
+                    "type": "string",
+                    "description": "This is service identifier as specified in the CNF charts (values.yaml)",
+                    "example": "gnbmgr"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "The HTTP status code for this occurrence of the problem",
+                    "example": 500
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "The HTTP status description for this occurrence of the problem",
+                    "example": "Internal Server Error"
+                  },
+                  "cause": {
+                    "type": "string",
+                    "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                    "example": "SERVER_NOT_REACHABLE"
+                  },
+                  "detail": {
+                    "type": "string",
+                    "description": "A human-readable explanation specific to this occurrence of the problem",
+                    "example": "rolling restart operation initiation failed for the nfService due to server error"
+                  },
+                  "invalidParams": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "param": {
+                          "type": "string",
+                          "example": "path: nfid",
+                          "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                        },
+                        "reason": {
+                          "type": "string",
+                          "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                        }
+                      },
+                      "required": [
+                        "param"
+                      ]
+                    },
+                    "minItems": 1,
+                    "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CNFRestartOperStatusInfo": {
+        "type": "object",
+        "properties": {
+          "cnf": {
+            "type": "string",
+            "description": "This is CNF identifier(s) as specified in the CNF charts (values.yaml)",
+            "example": "cucp1"
+          },
+          "status": {
+            "type": "string",
+            "description": "The HTTP status code for this occurrence of the problem",
+            "example": 404
+          },
+          "description": {
+            "type": "string",
+            "description": "The HTTP status description for this occurrence of the problem",
+            "example": "Not Found"
+          },
+          "cause": {
+            "type": "string",
+            "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+            "example": "NFID_FOR_RESTART_DOES_NOT_EXIST"
+          },
+          "detail": {
+            "type": "string",
+            "description": "A human-readable explanation specific to this occurrence of the problem",
+            "example": "request contains an nfId which does not exist"
+          },
+          "invalidParams": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "param": {
+                  "type": "string",
+                  "example": "path: nfid",
+                  "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                }
+              },
+              "required": [
+                "param"
+              ]
+            },
+            "minItems": 1,
+            "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+          },
+          "nfsResponses": {
+            "type": "array",
+            "description": "This represents the status of the initiation of the rolling restart for all the applicable nfService within the CNF",
+            "items": {
+              "type": "object",
+              "properties": {
+                "nfService": {
+                  "type": "string",
+                  "description": "This is service identifier as specified in the CNF charts (values.yaml)",
+                  "example": "gnbmgr"
+                },
+                "status": {
+                  "type": "string",
+                  "description": "The HTTP status code for this occurrence of the problem",
+                  "example": 500
+                },
+                "description": {
+                  "type": "string",
+                  "description": "The HTTP status description for this occurrence of the problem",
+                  "example": "Internal Server Error"
+                },
+                "cause": {
+                  "type": "string",
+                  "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+                  "example": "SERVER_NOT_REACHABLE"
+                },
+                "detail": {
+                  "type": "string",
+                  "description": "A human-readable explanation specific to this occurrence of the problem",
+                  "example": "rolling restart operation initiation failed for the nfService due to server error"
+                },
+                "invalidParams": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "param": {
+                        "type": "string",
+                        "example": "path: nfid",
+                        "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                      },
+                      "reason": {
+                        "type": "string",
+                        "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                      }
+                    },
+                    "required": [
+                      "param"
+                    ]
+                  },
+                  "minItems": 1,
+                  "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+                }
+              }
+            }
+          }
+        }
+      },
+      "NFServiceRestartInfo": {
+        "type": "object",
+        "properties": {
+          "nfService": {
+            "type": "string",
+            "description": "This is service identifier as specified in the CNF charts (values.yaml)",
+            "example": "gnbmgr"
+          },
+          "status": {
+            "type": "string",
+            "description": "The HTTP status code for this occurrence of the problem",
+            "example": 500
+          },
+          "description": {
+            "type": "string",
+            "description": "The HTTP status description for this occurrence of the problem",
+            "example": "Internal Server Error"
+          },
+          "cause": {
+            "type": "string",
+            "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+            "example": "SERVER_NOT_REACHABLE"
+          },
+          "detail": {
+            "type": "string",
+            "description": "A human-readable explanation specific to this occurrence of the problem",
+            "example": "rolling restart operation initiation failed for the nfService due to server error"
+          },
+          "invalidParams": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "param": {
+                  "type": "string",
+                  "example": "path: nfid",
+                  "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                }
+              },
+              "required": [
+                "param"
+              ]
+            },
+            "minItems": 1,
+            "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+          }
+        }
+      },
+      "ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "The HTTP status code for this occurrence of the problem",
+            "example": 400
+          },
+          "detail": {
+            "type": "string",
+            "description": "A human-readable explanation specific to this occurrence of the problem",
+            "example": "Unable to execute command due to missing JSON IE"
+          },
+          "cause": {
+            "type": "string",
+            "description": "A machine-readable application error cause specific to this occurrence of the problem, this IE should be present and provide application related error information, if available",
+            "example": "MANDATORY_IE_MISSING"
+          },
+          "invalidParams": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "param": {
+                  "type": "string",
+                  "example": "path: nfid",
+                  "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+                },
+                "reason": {
+                  "type": "string",
+                  "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+                }
+              },
+              "required": [
+                "param"
+              ]
+            },
+            "minItems": 1,
+            "description": "Description of invalid parameters, for a request rejected due to invalid parameters"
+          }
+        }
+      },
+      "InvalidParam": {
+        "type": "object",
+        "properties": {
+          "param": {
+            "type": "string",
+            "example": "path: nfid",
+            "description": "If the invalid parameter is an attribute in a JSON body, this IE shall contain the attribute's name and shall be encoded as a JSON Pointer, if the invalid parameter is an HTTP header, this IE shall be formatted as the concatenation of the string \"header\"+\":\"+\" \" plus the name of such header, if the invalid parameter is a query parameter, this IE shall be formatted as the concatenation of the string \"query\"+\":\"+\" \" plus the name of such query parameter, if the invalid parameter is a variable part in the path of a resource URI, this IE shall contain the name of the variable, including the symbols \"{\" and \"}\" used in OpenAPI specification as the notation to represent variable path segments"
+          },
+          "reason": {
+            "type": "string",
+            "description": "A human-readable reason, e.g. \"must be a positive integer\". In cases involving failed operations in a PATCH request, the reason string should identify the operation that failed using the operation's array index to assist in correlation of the invalid parameter with the failed operation, e.g.\" Replacement value invalid for attribute [failed operation index+\":\" 4]\""
+          }
+        },
+        "required": [
+          "param"
+        ]
+      }
+    }
+  }
+}

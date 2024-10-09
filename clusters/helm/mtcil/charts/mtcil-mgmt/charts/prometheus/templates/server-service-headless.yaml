@@ -1,0 +1,53 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.server.enabled -}}
+{{- if .Values.server.statefulSet.enabled -}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+apiVersion: v1
+kind: Service
+metadata:
+{{- if .Values.server.statefulSet.headless.annotations }}
+  annotations:
+{{ toYaml .Values.server.statefulSet.headless.annotations | indent 4 }}
+{{- end }}
+  {{- $custom_extensions := .Values.global.custom_extensions | default dict -}}
+  {{- if $custom_extensions.annotations }}
+  annotations:
+  {{- range $key, $value := .Values.global.custom_extensions.annotations }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  labels:
+    {{- include "prometheus.server.labels" . | nindent 4 }}
+{{- if .Values.server.statefulSet.headless.labels }}
+{{ toYaml .Values.server.statefulSet.headless.labels | indent 4 }}
+{{- end }}
+  {{- if $custom_extensions.labels -}}
+  {{- range $key, $value := .Values.global.custom_extensions.labels }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+  {{- end }}
+  name: {{ template "prometheus.server.fullname" . }}-headless
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  clusterIP: None
+  ports:
+    - name: http
+      port: {{ .Values.server.statefulSet.headless.servicePort }}
+      protocol: TCP
+      targetPort: 9090
+    {{- if .Values.server.statefulSet.headless.gRPC.enabled }}
+    - name: grpc
+      port: {{ .Values.server.statefulSet.headless.gRPC.servicePort }}
+      protocol: TCP
+      targetPort: 10901
+    {{- if .Values.server.statefulSet.headless.gRPC.nodePort }}
+      nodePort: {{ .Values.server.statefulSet.headless.gRPC.nodePort }}
+    {{- end }}
+    {{- end }}
+
+  selector:
+    {{- include "prometheus.server.matchLabels" . | nindent 4 }}
+{{- end -}}
+{{- end -}}
+{{- end }}

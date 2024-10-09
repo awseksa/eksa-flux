@@ -1,0 +1,17 @@
+{
+    "logging_svc_url": "{{.Values.global.mtcil.logging_svc_url}}",
+    "logging_svc_tcp_port": "{{.Values.global.mtcil.logging_svc_tcp_port}}",
+    "kafka_brokers": [
+        "{{.Values.global.mtcil.kafka_svc_fqdn}}"
+    ],
+    "etcd_url": "{{.Values.global.mtcil.etcd_svc_fqdn}}",
+    "enable_retrx": "{{.Values.global.mtcil.enable_retrx}}",
+    "log_format": "{{.Values.global.mtcil.log_format}}",
+    "config_mode": "{{.Values.global.mtcil.config_mode}}",
+    "labels": "{{.Values.global.mtcil.k8s_nf_labels}}",
+    "event_labels_to_be_prefixed": "{{.Values.global.mtcil.event_labels_to_be_prefixed}}",
+    "event_label_tmaas_prefix": "{{.Values.global.mtcil.event_label_tmaas_prefix}}",
+    "event_labels_to_be_excluded_nf": "{{.Values.global.mtcil.event_labels_to_be_excluded_nf}}",
+    "event_labels_to_be_excluded_nfs": "{{.Values.global.mtcil.event_labels_to_be_excluded_nfs}}",
+    "dnPrefix": "{{.Values.global.dnPrefix}}"
+}

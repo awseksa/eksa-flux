@@ -1,0 +1,53 @@
+{{- if ( and (.Values.global.mtcil.optionalDeployment.traefik) (.Values.global.mtcil.enableRBACprovisioning)) }}
+{{- if and .Values.enabled .Values.rbac.enabled .Values.global.mtcil.scope.namespaced (not .Values.global.mtcil.scope.namespaceList) -}}
+
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "traefik.fullname" . }}
+  namespace: {{ template "traefik.namespace" . }}
+  labels:
+    app.kubernetes.io/name: {{ template "traefik.name" . }}
+    helm.sh/chart: {{ template "traefik.chart" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "traefik.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "traefik.serviceAccountName" . }}
+    namespace: {{ template "traefik.namespace" . }}
+{{- end -}}
+
+{{- if and .Values.enabled .Values.rbac.enabled .Values.global.mtcil.scope.namespaced .Values.global.mtcil.scope.namespaceList }}
+{{- $globalScope := . }}
+{{- range $namespace := .Values.global.mtcil.scope.namespaceList }}
+{{- with $globalScope }}
+{{- if or .Values.global.mtcil.scope.enableNamespaceListRBAC ( eq (include "traefik.namespace" . | quote) ($namespace | quote) ) }}
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: {{ template "traefik.fullname" . }}
+  namespace: {{ $namespace }}
+  labels:
+    app.kubernetes.io/name: {{ template "traefik.name" . }}
+    helm.sh/chart: {{ template "traefik.chart" . }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ template "traefik.fullname" . }}
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "traefik.serviceAccountName" . }}
+    namespace: {{ template "traefik.namespace" . }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+
+{{- end }}

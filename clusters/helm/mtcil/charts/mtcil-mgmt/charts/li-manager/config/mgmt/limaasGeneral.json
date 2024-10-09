@@ -1,0 +1,9 @@
+{
+    "config": {
+      "li_interface": {
+        "show_exec_retries": 10,
+        "log_level": "{{.Values.li.log_level}}"
+      }
+    }
+  }
+  

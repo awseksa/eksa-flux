@@ -1,0 +1,3 @@
+{{- if .Values.global.mtcil.scope.namespaced }}
+{{ toJson .Values.global.mtcil.scope.namespaceList }}
+{{- end }}

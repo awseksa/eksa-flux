@@ -1,0 +1,99 @@
+{{- if and .Values.global.mtcil.enableServiceprovisioning .Values.global.mtcil.enableMandatoryServices }}
+{{- if .Values.global.mtcil.infra_deploy -}}
+{{- if and (.Values.global) (.Values.global.mtcil) (.Values.global.mtcil.storage) (.Values.global.mtcil.storage.isProviderMTCIL) (.Values.volume.pvenabled)}}
+{{- $cnfHdr := (dict "" "") -}}
+{{- include "cnfTplHeader_2_27" (dict "cnfHdr" $cnfHdr "dot" . ) -}}
+{{- if lt (len .Values.global.mtcil.storage.hostlocalVolumeSelector) (int .Values.container.replica_count) }}
+{{- fail "zk:: insufficient pv selector configured" }}
+{{- end }}
+{{- range $index, $valueset := $cnfHdr.nfVariables.root.Values.global.mtcil.storage.hostlocalVolumeSelector }}
+{{- if lt (int $index) (int $cnfHdr.nfVariables.root.Values.container.replica_count) }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  {{- if $cnfHdr.nfVariables.root.Values.app_name_prefix }}
+  name: {{ $cnfHdr.nfVariables.root.Values.app_name_prefix }}-pv-{{ $index }}
+  {{- else }}
+  name: {{ $cnfHdr.nfVariables.root.Values.volume.name }}-init-{{ $cnfHdr.nfVariables.root.Values.global.mtcil.storage.mtcilLocalStoragePVJobTag }}-{{ $index }}
+  {{- end }}
+  labels:
+    app.kubernetes.io/name: {{ $cnfHdr.nfVariables.root.Chart.Name }}
+    app.kubernetes.io/instance: {{ $cnfHdr.nfVariables.root.Release.Name }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+spec:
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "false"
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - {key: kubernetes.io/hostname, operator: In, values: [ {{ $valueset }} ]}
+              {{- if and ($cnfHdr.nfVariables.root.Values.global) ($cnfHdr.nfVariables.root.Values.global.mtcil) ($cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector) ($cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector.enabled) }}
+              - {key: {{ $cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector.labelKey }}, operator: In, values: [ {{ $cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector.labelValue | quote }} ]}
+              {{- end }}
+      {{- if $cnfHdr.nfVariables.root.Values.global.mtcil.use_release_ns }}
+      serviceAccountName: mtcil-sa
+      {{- end }}
+      containers:
+      - name: pvinit
+        image: {{ $cnfHdr.nfVariables.root.Values.global.hub }}/{{ $cnfHdr.nfVariables.root.Values.global.mtcil.storage.mtcilLocalStoragePVJobImage }}:{{ $cnfHdr.nfVariables.root.Values.global.mtcil.storage.mtcilLocalStoragePVJobTag }}
+        imagePullPolicy: {{ $cnfHdr.nfVariables.root.Values.global.mtcil.imagePullPolicy }}
+        command: ["/bin/sh"]
+        args: ["-c", "mkdir -p /pv-data/{{ $cnfHdr.nfVariables.root.Values.volume.pathprefix }}/vol-{{ $index }}"]
+        volumeMounts:
+        - name: pv-mnt
+          mountPath: /pv-data
+      volumes:
+      - name: pv-mnt
+        hostPath:
+          path: {{$cnfHdr.nfVariables.root.Values.global.mtcil.storage.mtcilLocalStorageHostPathPrefix}}
+          type: DirectoryOrCreate
+      restartPolicy: OnFailure
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ printf "%s" ( ternary ( printf "%s-" ( $cnfHdr.nfVariables.mtcilId | toString ) ) "" $cnfHdr.nfVariables.root.Values.global.mtcil.storage.mtcilIdPrefixed ) }}{{ $cnfHdr.nfVariables.root.Values.volume.name }}-{{ $index }}
+  namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+  labels:
+    app.kubernetes.io/name: {{ $cnfHdr.nfVariables.root.Chart.Name }}
+    app.kubernetes.io/instance: {{ $cnfHdr.nfVariables.root.Release.Name }}
+    zk-vol: "true"
+spec:
+  capacity:
+    storage: {{ $cnfHdr.nfVariables.root.Values.volume.storageCapacity }}
+  accessModes:
+  - {{ $cnfHdr.nfVariables.root.Values.volume.accessModes }}
+  persistentVolumeReclaimPolicy: {{ $cnfHdr.nfVariables.root.Values.volume.reclaimPolicy }}
+  {{- if ($cnfHdr.nfVariables.root.Values.volume.storageClassName) }}
+  storageClassName: {{ $cnfHdr.nfVariables.root.Values.volume.storageClassName }}
+  {{- else }}
+  storageClassName: {{ $cnfHdr.nfVariables.root.Values.global.mtcil.storage.storageClass }}
+  {{- end }}
+  local:
+    path: {{$cnfHdr.nfVariables.root.Values.global.mtcil.storage.mtcilLocalStorageHostPathPrefix}}/{{ $cnfHdr.nfVariables.root.Values.volume.pathprefix }}/vol-{{ $index }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - {key: kubernetes.io/hostname, operator: In, values: [ {{ $valueset }} ]}
+        {{- if and ($cnfHdr.nfVariables.root.Values.global) ($cnfHdr.nfVariables.root.Values.global.mtcil) ($cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector) ($cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector.enabled) }}
+        - {key: {{ $cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector.labelKey }}, operator: In, values: [ {{ $cnfHdr.nfVariables.root.Values.global.mtcil.infraNodeSelector.labelValue | quote }} ]}
+        {{- end }}
+  claimRef:
+    {{- if $cnfHdr.nfVariables.root.Values.app_name_prefix }}
+    name: zk-vol-{{ $cnfHdr.nfVariables.root.Values.app_name_prefix }}-{{ $index }}
+    {{- else }}
+    name: zk-vol-zk-{{ $index }}
+    {{- end }}
+    namespace: {{ $cnfHdr.nfVariables.nfPrefix }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
+{{- end }}
