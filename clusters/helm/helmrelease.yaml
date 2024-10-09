@@ -1,0 +1,13 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: helmrel
+  namespace: flux-system
+spec:
+  interval: 10m
+  chartRef:
+    kind: HelmChart
+    name: helmrepo
+    namespace: flux-system
+  values:
+    replicaCount: 2
