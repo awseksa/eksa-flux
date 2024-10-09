@@ -1,5 +1,5 @@
 global:
-  __ClusterExtIP: 10.69.201.157                                                #Please Update the Cluster Master node IP
+  __ClusterExtIP: 10.69.201.187                                                #Please Update the Cluster Master node IP
   hub: public.ecr.aws/a6u6k4n0
   #timezone: "UTC"
   dnPrefix: mvnr-aws-du
