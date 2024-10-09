@@ -65,7 +65,7 @@ componentSpec:
 
 serviceAccount: config-serviceaccount
 replica_count: 1
-hub: 10.1.1.1:5000
+hub: public.ecr.aws/a6u6k4n0
 changeset_lease: 120
 mutex_timeout: 100
 batch_size: 1
