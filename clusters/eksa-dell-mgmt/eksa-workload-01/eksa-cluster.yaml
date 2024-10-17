@@ -1,7 +1,10 @@
 apiVersion: anywhere.eks.amazonaws.com/v1alpha1
 kind: Cluster
 metadata:
+  annotations:
+    anywhere.eks.amazonaws.com/skip-ip-check: "true"
   name: eksa-workload-01
+  namespace: default
 spec:
   clusterNetwork:
     cniConfig:
