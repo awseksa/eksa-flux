@@ -33,6 +33,7 @@ apiVersion: anywhere.eks.amazonaws.com/v1alpha1
 kind: TinkerbellDatacenterConfig
 metadata:
   name: eksa-workload-01
+  namespace: default
 spec:
   hookImagesURLPath: "http://10.69.201.5:8000/hookos"
   osImageURL: "http://10.69.201.5:8000/v1_29/ubuntu-2204-kube-1-29.gz"
@@ -42,6 +43,7 @@ apiVersion: anywhere.eks.amazonaws.com/v1alpha1
 kind: TinkerbellMachineConfig
 metadata:
   name: eksa-workload-01-cp
+  namespace: default
 spec:
   hardwareSelector:
     type: cp
