@@ -1,0 +1,69 @@
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: Cluster
+metadata:
+  annotations:
+    anywhere.eks.amazonaws.com/skip-ip-check: "true"
+  name: eksa-workload-01
+  namespace: default
+spec:
+  gitOpsRef:
+    name: eksa-workload-01
+    kind: FluxConfig
+  clusterNetwork:
+    cniConfig:
+      cilium: {}
+    pods:
+      cidrBlocks:
+      - 192.168.0.0/16
+    services:
+      cidrBlocks:
+      - 10.96.0.0/12
+  controlPlaneConfiguration:
+    count: 1
+    endpoint:
+      host: "10.69.201.198"
+    machineGroupRef:
+      kind: TinkerbellMachineConfig
+      name: eksa-workload-01-cp
+  datacenterRef:
+    kind: TinkerbellDatacenterConfig
+    name: eksa-workload-01
+  kubernetesVersion: "1.29"
+  managementCluster:
+    name: eksa-dell-mgmt
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: FluxConfig
+metadata:
+  name: eksa-workload-01
+spec:
+    github:
+      personal: true
+      repository: eksa-flux
+      owner: awseksa
+    branch: "eksa-flux-2"
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: TinkerbellDatacenterConfig
+metadata:
+  name: eksa-workload-01
+  namespace: default
+spec:
+  hookImagesURLPath: "http://10.69.201.5:8000/hookos"
+  osImageURL: "http://10.69.201.5:8000/v1_29/ubuntu-2204-kube-1-29.gz"
+  tinkerbellIP: "10.69.201.189"
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: TinkerbellMachineConfig
+metadata:
+  name: eksa-workload-01-cp
+  namespace: default
+spec:
+  hardwareSelector:
+    type: cp
+  osFamily: ubuntu
+  templateRef: {}
+  users:
+    - name: dell-du
+      sshAuthorizedKeys:
+        - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDC++QhrFRY3cY/DJNgaKVlz6bAEBJ5hfagdGoSfo3QmScSt6wePbOO/FX0bJXFOqjqWNkE0Nax9xTDL/y51doUTis9dLR3ZkN9kEQlsbfYCOm5sZgeusoN2Pxsi5WcFqZGlOsPkRN1pfNZt9EQX+fQEfpyguACyg5W4XjiTdyaOG3SaEbuN9fW2mer8xwfy6OQoUznHzOR+M7m91AwI4tZKWUYET+lMfLMYoAKvRD9/1G4I2z2psM+Um6IaDqx853Bnz+GEahalQn9V4FkoNCa9NYqrT4eoz1mYuO94Tj/kXWi/+AXSrAXtpwGDbTQztTMxmbXWyU5Ijj+z3QG1LchE6v2/wbVEbGPOvl4rdD7KM/I7xY9D5P46Vicr4vDFPK6Ulqw5jtlImPKnOh6TWbUgaWDIsLS2y1K5F+5wRATpgD+K5yFBJrMNh7yB/u17a1QTenOvuftG9GVXScHaZWlBRbO/bbQQdXd+aBDzWPqgk6bII19DNjT6vvQiYepWhNoIckRkhbZ9pCaeZH7r7OnPjah5tG177/FzIdyBy5EhAtD075/r55jXh8ikvixg4hSmhZCDUF804t1ivr3kDGQjVq/sVnacGjyeXGvQrbdVBMPzmYUIq+NS+0MITG1LxALeaG84ra4WYh0G2duntHIWokfJa1mCb+YGdR48xQl6w==
