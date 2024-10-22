@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: export-kubeconfig
-  namespace: eksa-system
+  namespace: default
 spec:
   template:
     spec:
