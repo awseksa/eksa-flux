@@ -12,7 +12,7 @@ spec:
         env:
         - name: SECRET_NAME
           value: "eksa-workload-01-kubeconfig"  # Set your secret name here
-        - name: GT
+        - name: GT      # Github secret
           valueFrom:
             secretKeyRef:
               name: my-token-secret
@@ -25,12 +25,12 @@ spec:
             echo "Kubeconfig saved to /output/w01.kubeconfig"
 
 
-            KC=/output/w01.kubeconfig
-            FV=2.3.0
-            GN=awseksa
-            GR=eksa-repo
-            GB=aws-eksaflux
-            GP=./clusters/eksa-workload-01/
+            KC=/output/w01.kubeconfig   # kubeconfig file of workload cluster
+            FV=2.3.0       # flux version                 
+            GN=awseksa    # Github owner name
+            GR=eksa-repo  # Github repository name
+            GB=aws-eksaflux    # Github branch name
+            GP=./clusters/eksa-workload-01/     # Github path to workload cluster
 
             export KUBECONFIG=$KC
 
