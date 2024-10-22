@@ -2,7 +2,7 @@ apiVersion: batch/v1
 kind: Job
 metadata:
   name: export-kubeconfig
-  namespace: default
+  namespace: eksa-system
 spec:
   template:
     spec:
@@ -16,6 +16,7 @@ spec:
           valueFrom:
             secretKeyRef:
               name: my-token-secret
+              namespace: default
               key: token
         command: ["/bin/sh", "-c"]
         args:
