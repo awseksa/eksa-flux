@@ -16,7 +16,6 @@ spec:
           valueFrom:
             secretKeyRef:
               name: my-token-secret
-              namespace: default
               key: token
         command: ["/bin/sh", "-c"]
         args:
