@@ -7,7 +7,10 @@ metadata:
   namespace: default
 spec:
   clusterNetwork:
-    cniConfig:      cilium: {}    pods:      cidrBlocks:
+    cniConfig:
+      cilium: {}    
+	pods:      
+	  cidrBlocks:
       - 192.168.0.0/16
     services:
       cidrBlocks:
