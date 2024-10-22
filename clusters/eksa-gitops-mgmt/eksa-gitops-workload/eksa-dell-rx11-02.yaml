@@ -1,0 +1,52 @@
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: Cluster
+metadata:
+  annotations:
+    anywhere.eks.amazonaws.com/skip-ip-check: "true"
+  name: eksa-workload-01
+  namespace: default
+spec:
+  clusterNetwork:
+    cniConfig:      cilium: {}    pods:      cidrBlocks:
+      - 192.168.0.0/16
+    services:
+      cidrBlocks:
+      - 10.96.0.0/12
+  controlPlaneConfiguration:
+    count: 1
+    endpoint:
+      host: "10.69.201.198"
+    machineGroupRef:
+      kind: TinkerbellMachineConfig
+      name: eksa-workload-01-cp
+  datacenterRef:
+    kind: TinkerbellDatacenterConfig
+    name: eksa-workload-01
+  kubernetesVersion: "1.29"
+  managementCluster:
+    name: eksa-gitops-mgmt
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: TinkerbellDatacenterConfig
+metadata:
+  name: eksa-workload-01
+  namespace: default
+spec:
+  hookImagesURLPath: "http://10.69.201.5:8000/hookos"
+  osImageURL: "http://10.69.201.5:8000/v1_29/ubuntu-2204-kube-1-29.gz"
+  tinkerbellIP: "10.69.201.189"
+---
+apiVersion: anywhere.eks.amazonaws.com/v1alpha1
+kind: TinkerbellMachineConfig
+metadata:
+  name: eksa-workload-01-cp
+  namespace: default
+spec:
+  hardwareSelector:
+    type: cp
+  osFamily: ubuntu
+  templateRef: {}
+  users:
+    - name: dell-du
+      sshAuthorizedKeys:
+      - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQC8ELdIEO9ORuZmQfFpECs/TF5gy863OHJPRqjenoNAdOzm5YsfcZm4g5yP3e9LmF7sg57ZxRvameqMKDyXUa3jSvaYd3Pa3vR1X1NC6uyZDHgZXW60QjGXacaZ3ebRvh2hI/qq94OHdgabA+nK7CoFK3av8WN9SevJhH2cXY6huxe7LOum73VAdIhzfiW6LpQriKFfcezjBjmeo8bOf8J0mVx/UCghsRCP+7NdIwYwpRCvNlSEIvenVCxD2ALWG3g7fW3HZptePFoIFO9hyQIwshLU5X+KEmgWTfVcPN9R85Vijrk6q5wFF2u8XyuXnKVmwnd7v5HOw2xGeOHeqfQohT677SGMhEJx30hH+D+D0895eg3efosJ5G7sdR0VRvXWPTrBNJ9AOKqcXBF49I+YnoAyJK+Pxk22VWWQXdelUwa5iQ6gw3ssX/hUC4McwSeyL0Ym9y8tW2lc66rUsX44jM5rP/ICf610z+01ddg+gbpHNBBSdBbAI+3hfh5Ir2UuANxoXCOkbUQx4YBZFeKmYBi9h/sJTNtz5Eaj9VO/hEVdtqunDdUm5/Xt4w4G1v4wipy6OuEhEmGak0R40kPzkm9JAONpWsXUWVvNy2GY85tg9HTl+5yKAyjy3EOOugLsPl7/Br0cBdv0Te9BL0Xewn0e3LyyI18BTeIgZ9cBLQ==
